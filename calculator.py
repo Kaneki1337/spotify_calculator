@@ -33,6 +33,23 @@ def get_spotify_monthly_listeners(artist_url):
     except Exception as e:
         return None
 
+st.header("3️⃣ Sosyal Medya Gelir Hesaplayıcı")
+
+with st.expander("📱 Instagram ve TikTok gelirini hesapla"):
+    social = st.selectbox("Platform Seçin", ["Instagram", "TikTok"])
+
+    if social == "Instagram":
+        followers = st.number_input("Takipçi Sayısı", min_value=0, key="ig_followers")
+        engagement = st.slider("Etkileşim Oranı (%)", 0.0, 20.0, 3.0, key="ig_engage")
+        income = followers * (engagement / 100) * 0.02
+        st.success(f"Tahmini Instagram geliri: **${income:,.2f} USD**")
+
+    elif social == "TikTok":
+        followers = st.number_input("Takipçi Sayısı", min_value=0, key="tt_followers")
+        avg_views = st.number_input("Ortalama Görüntülenme", min_value=0, key="tt_views")
+        income = avg_views * 0.015
+        st.success(f"Tahmini TikTok geliri: **${income:,.2f} USD**")
+
 st.set_page_config(page_title="Müzik Gelir Hesaplayıcı", layout="centered")
 st.title("🎧 Spotify & Sosyal Medya Gelir Hesaplayıcı")
 
