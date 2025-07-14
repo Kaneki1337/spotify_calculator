@@ -4,6 +4,8 @@ import os
 import requests
 import base64
 from urllib.parse import urlparse
+import pandas as pd
+import altair as alt
 
 # --- .env yükle
 load_dotenv()
@@ -82,7 +84,6 @@ def extract_artist_id(spotify_url):
 def get_spotify_token(client_id, client_secret):
     auth_str = f"{client_id}:{client_secret}"
     b64_auth = base64.b64encode(auth_str.encode()).decode()
-
     headers = {
         "Authorization": f"Basic {b64_auth}",
         "Content-Type": "application/x-www-form-urlencoded"
@@ -90,7 +91,6 @@ def get_spotify_token(client_id, client_secret):
     data = {
         "grant_type": "client_credentials"
     }
-
     r = requests.post("https://accounts.spotify.com/api/token", headers=headers, data=data)
     return r.json().get("access_token")
 
@@ -131,7 +131,6 @@ if selected == "profil":
 
     choice = st.selectbox("Sanatçı seçin veya özel link girin", options.keys())
     spotify_url = st.text_input("Spotify Sanatçı Linki", value=options[choice])
-
     region = st.selectbox("Dinleyici kitlesi bölgesi", list(region_rates.keys()))
 
     if st.button("Veriyi Çek ve Hesapla"):
@@ -150,6 +149,28 @@ if selected == "profil":
                     st.success(f"Takipçi: {followers:,}")
                     st.success(f"Tahmini Toplam Dinlenme: {total_streams:,}")
                     st.success(f"Tahmini Gelir: ${income:,.2f} USD")
+
+                    st.markdown("---")
+                    st.subheader("🎧 En Popüler Şarkılar")
+                    data = []
+                    for t in top_tracks:
+                        data.append({
+                            "Şarkı": t["name"],
+                            "Popülarite": t["popularity"],
+                            "Tahmini Dinlenme": estimate_streams_from_popularity(t["popularity"]),
+                            "Albüm": t["album"]["name"],
+                            "Süre (dk)": round(t["duration_ms"] / 60000, 2)
+                        })
+
+                    df = pd.DataFrame(data)
+                    st.dataframe(df, use_container_width=True)
+
+                    chart = alt.Chart(df).mark_bar().encode(
+                        x=alt.X("Şarkı", sort="-y"),
+                        y="Tahmini Dinlenme",
+                        tooltip=["Şarkı", "Popülarite", "Tahmini Dinlenme"]
+                    ).properties(height=400)
+                    st.altair_chart(chart, use_container_width=True)
                 else:
                     st.error("Veri alınamadı.")
         else:
