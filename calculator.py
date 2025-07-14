@@ -5,72 +5,62 @@ import requests
 import base64
 from urllib.parse import urlparse
 
-# --- Load .env ---
+# --- .env yükle
 load_dotenv()
 client_id = os.getenv("SPOTIFY_CLIENT_ID")
 client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
 
-# --- Sayfa Ayarı ---
+# --- Sayfa Ayarları ---
 st.set_page_config(page_title="KXNEKIPASA Calculator", layout="wide")
 st.markdown("<h1 style='text-align: center;'>KXNEKIPASA CALCULATOR</h1>", unsafe_allow_html=True)
 
-# --- Menü CSS (Animasyon + Hover Efekti) ---
+# --- Menü Seçimi (session_state ile)
+if "menu" not in st.session_state:
+    st.session_state.menu = "profil"
+
+# --- Buton Tasarımı (CSS) ---
 st.markdown("""
 <style>
-.menu-btn {
-    display: inline-block;
-    padding: 1rem 2rem;
-    margin: 10px;
-    font-weight: bold;
-    text-align: center;
+div.stButton > button {
+    background-color: white;
+    color: black;
     border: 2px solid black;
     border-radius: 15px;
-    transition: all 0.3s ease;
-    cursor: pointer;
+    padding: 0.75rem 1.5rem;
+    font-weight: bold;
+    transition: 0.3s ease;
+    margin: 10px;
 }
-.menu-btn:hover {
+div.stButton > button:hover {
     background-color: black;
     color: white;
     transform: scale(1.05);
 }
-.center {
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    margin-bottom: 30px;
-}
 </style>
 """, unsafe_allow_html=True)
 
-# --- Menü Butonları (HTML tabanlı) ---
-menu_html = """
-<div class="center">
-    <form method="post">
-        <button name="menu" value="profil" class="menu-btn">PROFİL HESAPLAMA</button>
-        <button name="menu" value="stream" class="menu-btn">STREAM HESAPLAMA</button>
-        <button name="menu" value="youtube" class="menu-btn">YOUTUBE HESAPLAMA</button>
-        <button name="menu" value="sosyal" class="menu-btn">INSTAGRAM VE TIKTOK HESAPLAMA</button>
-    </form>
-</div>
-"""
-st.markdown(menu_html, unsafe_allow_html=True)
+# --- Menü Butonları ---
+col1, col2, col3, col4 = st.columns(4)
 
-# --- Menü seçimi session_state ile ---
-if "menu" not in st.session_state:
-    st.session_state.menu = "profil"  # default sayfa
+with col1:
+    if st.button("PROFİL HESAPLAMA"):
+        st.session_state.menu = "profil"
 
-# URL'den gelen veri varsa al (formdan)
-if st.experimental_get_query_params().get("menu"):
-    st.session_state.menu = st.experimental_get_query_params()["menu"][0]
+with col2:
+    if st.button("STREAM HESAPLAMA"):
+        st.session_state.menu = "stream"
 
-# Menü seçimi session_state ile
-if "menu" not in st.session_state:
-    st.session_state.menu = "profil"  # default sayfa
+with col3:
+    if st.button("YOUTUBE HESAPLAMA"):
+        st.session_state.menu = "youtube"
 
-# Butona basınca çalışması için bir workaround'a gerek yok artık
+with col4:
+    if st.button("INSTAGRAM VE TIKTOK HESAPLAMA"):
+        st.session_state.menu = "sosyal"
+
 selected = st.session_state.menu
 
-# --- Kazanç oranları ---
+# --- Bölgesel Kazanç Oranları ---
 region_rates = {
     "Amerika": 0.0035,
     "Türkiye": 0.0010,
@@ -79,7 +69,7 @@ region_rates = {
     "Dünya Geneli": 0.0020
 }
 
-# --- Fonksiyonlar ---
+# --- Yardımcı Fonksiyonlar ---
 def extract_artist_id(spotify_url):
     try:
         path = urlparse(spotify_url).path
@@ -128,7 +118,7 @@ def estimate_streams_from_popularity(pop):
     else:
         return 100_000
 
-# --- İçerik Gösterimi ---
+# --- Seçilen Menüye Göre İçerik ---
 if selected == "profil":
     st.header("🎵 Spotify Sanatçı Linki ile Hesaplama")
     spotify_url = st.text_input("Spotify Sanatçı Linki", placeholder="https://open.spotify.com/artist/...")
@@ -178,5 +168,5 @@ elif selected == "sosyal":
     tt_income = tt_views * 0.015
     st.success(f"TikTok geliri: ${tt_income:,.2f} USD")
 
-# Alt bilgi
+# --- Alt Bilgi ---
 st.info("💡 Hesaplamalar tahmini verilere dayalıdır. Gerçek gelirler anlaşmalara ve platformlara göre değişebilir.")
