@@ -118,7 +118,7 @@ if not st.session_state.logged_in:
     st.stop()
 
 # --- Giriş Yapılmış Kullanıcılar İçin Uygulama Devamı
-st.set_page_config(page_title="KXNEKIPASA Calculator", layout="wide")
+st.set_page_config(page_title="KXNEqwfqKIPASA Calculator", layout="wide")
 st.markdown(f"<h1 style='text-align: center; color:#b266ff;'>Hoş geldin, {st.session_state.user['username']}!</h1>", unsafe_allow_html=True)
 st.markdown("---")
 
