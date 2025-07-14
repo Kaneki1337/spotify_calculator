@@ -12,6 +12,22 @@ client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
 
 # --- Sayfa Ayarları ---
 st.set_page_config(page_title="KXNEKIPASA Calculator", layout="wide")
+
+# --- Saydam Arka Plan Resmi ---
+st.markdown("""
+    <style>
+    .stApp {
+        background: url('https://i.imgur.com/JxObNzk.jpg') no-repeat center center fixed;
+        background-size: cover;
+    }
+    h1 {
+        background-color: rgba(0, 0, 0, 0.4);
+        padding: 1rem;
+        border-radius: 10px;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 st.markdown("""
     <h1 style='text-align: center; color:#b266ff;'>KXNEKIPASA CALCULATOR</h1>
 """, unsafe_allow_html=True)
