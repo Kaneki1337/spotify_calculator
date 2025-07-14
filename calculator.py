@@ -1,16 +1,16 @@
 # calculator.py
-from dotenv import load_dotenv
-import os
-
-load_dotenv()
-
-client_id = os.getenv("SPOTIFY_CLIENT_ID")
-client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
 
 import streamlit as st
 import requests
 import base64
 from urllib.parse import urlparse
+from dotenv import load_dotenv
+import os
+
+# --- .env dosyasını yükle ---
+load_dotenv()
+client_id = os.getenv("SPOTIFY_CLIENT_ID")
+client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
 
 # Spotify artist ID ayıklama
 def extract_artist_id(spotify_url):
@@ -59,9 +59,20 @@ def get_artist_top_tracks(artist_id, token):
         return response.json().get("tracks", [])
     return []
 
-# Popularity değerini yaklaşık stream sayısına çevir
+# Popularity değerini yaklaşık stream sayısına çevir (iyileştirilmiş versiyon)
 def estimate_streams_from_popularity(popularity):
-    return int((popularity / 100) * 5_000_000)  # örnek oran
+    if popularity >= 90:
+        return 50_000_000
+    elif popularity >= 80:
+        return 10_000_000
+    elif popularity >= 70:
+        return 5_000_000
+    elif popularity >= 60:
+        return 1_000_000
+    elif popularity >= 50:
+        return 500_000
+    else:
+        return 100_000
 
 # Ülkeye göre stream kazanç oranları
 region_rates = {
@@ -76,13 +87,13 @@ region_rates = {
 st.set_page_config(page_title="Müzik Gelir Hesaplama", layout="centered")
 st.title("\U0001F3A7 Spotify & Sosyal Medya Gelir Hesaplayıcı")
 
+# Bilgilendirme
+st.info("💡 Hesaplamalar tahmini oranlara dayalıdır. Gerçek gelirler; platform, dağıtımcı ve anlaşmalara göre değişiklik gösterebilir.")
+
 # --- 1. Spotify Sanatçı Profili ile Otomatik Hesaplama ---
 st.header("1️⃣ Spotify Sanatçı Linki ile Otomatik Hesapla")
 
 with st.expander("🎵 Spotify sanatçı linkini girerek gelir hesapla"):
-    client_id = "3bcaf5a985fa491c8b573f9df6fe6e22"
-    client_secret = "1de40bfcf93d4bb28eec7ee6f2a660a6"
-
     spotify_url = st.text_input("Spotify Sanatçı Linki", placeholder="https://open.spotify.com/artist/...")
     region = st.selectbox("Dinleyici kitlesi bölgesi", list(region_rates.keys()))
 
@@ -138,5 +149,5 @@ st.header("4️⃣ YouTube Topic Geliri")
 
 with st.expander("▶️ YouTube Topic görüntülenme ile gelir hesapla"):
     yt_views = st.number_input("YouTube Topic Görüntülenme", min_value=0)
-    yt_income = yt_views * 0.00069  # Ortalama YouTube Music gelir oranı
+    yt_income = yt_views * 0.00069
     st.success(f"YouTube Topic şarkı geliri: ${yt_income:,.2f} USD")
