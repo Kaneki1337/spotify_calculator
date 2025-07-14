@@ -1,15 +1,26 @@
 import streamlit as st
-import json
+from dotenv import load_dotenv
 import os
 import requests
+import base64
+from urllib.parse import urlparse
+import pandas as pd
+import json
+import time
 
-WEBHOOK_URL = "https://canary.discord.com/api/webhooks/1394242204628946974/6CZf6_OXWY5SLXPZZm3DWd3Y3XER3eHIiuzvCVBNcS44DfrbGYloC8-XH4VuKxhgfhgV"  # Buraya kendi webhook'unu koy
+# --- .env yükle
+load_dotenv()
+client_id = os.getenv("SPOTIFY_CLIENT_ID")
+client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
+WEBHOOK_URL = "https://canary.discord.com/api/webhooks/1394242204628946974/6CZf6_OXWY5SLXPZZm3DWd3Y3XER3eHIiuzvCVBNcS44DfrbGYloC8-XH4VuKxhgfhgV"  # <-- Burayı kendi webhook URL'inle değiştir
 
+# --- Kullanıcı verisi dosyası
 USER_DB = "users.json"
 if not os.path.exists(USER_DB):
     with open(USER_DB, "w") as f:
         json.dump({}, f)
 
+# --- Kullanıcı Yardımcı Fonksiyonları
 def load_users():
     with open(USER_DB, "r") as f:
         return json.load(f)
@@ -21,17 +32,17 @@ def save_users(users):
 def send_webhook(event, username, email):
     try:
         requests.post(WEBHOOK_URL, json={"content": f"📢 **{event}**\n👤 Kullanıcı: `{username}`\n📧 {email}"})
-    except Exception as e:
-        print("Webhook hatası:", e)
+    except:
+        pass  # webhook hatasını yut
 
 def register_user(username, email, password):
     users = load_users()
     if username in users:
-        return False, "Kullanıcı adı zaten kayıtlı."
+        return False, "❗ Kullanıcı adı zaten kayıtlı."
     users[username] = {"email": email, "password": password}
     save_users(users)
     send_webhook("Yeni Kayıt", username, email)
-    return True, "Kayıt başarılı."
+    return True, "✅ Kayıt başarılı!"
 
 def login_user(username, password):
     users = load_users()
@@ -40,14 +51,44 @@ def login_user(username, password):
         return True, users[username]
     return False, None
 
-# --- Streamlit Arayüzü ---
+# --- Spotify API Yardımcıları
+def extract_artist_id(spotify_url):
+    try:
+        path = urlparse(spotify_url).path
+        return path.split("/")[-1]
+    except:
+        return None
 
-st.set_page_config("Giriş/Kayıt", layout="centered")
+def get_spotify_token(client_id, client_secret):
+    auth_str = f"{client_id}:{client_secret}"
+    b64_auth = base64.b64encode(auth_str.encode()).decode()
+    headers = {
+        "Authorization": f"Basic {b64_auth}",
+        "Content-Type": "application/x-www-form-urlencoded"
+    }
+    data = {"grant_type": "client_credentials"}
+    r = requests.post("https://accounts.spotify.com/api/token", headers=headers, data=data)
+    return r.json().get("access_token")
 
+def get_artist_data_from_api(artist_id, token):
+    url = f"https://api.spotify.com/v1/artists/{artist_id}"
+    headers = {"Authorization": f"Bearer {token}"}
+    r = requests.get(url, headers=headers)
+    return r.json() if r.status_code == 200 else None
+
+def get_artist_top_tracks(artist_id, token):
+    url = f"https://api.spotify.com/v1/artists/{artist_id}/top-tracks?market=US"
+    headers = {"Authorization": f"Bearer {token}"}
+    r = requests.get(url, headers=headers)
+    return r.json().get("tracks", []) if r.status_code == 200 else []
+
+# --- Session Vars
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
+# --- Giriş/Kayıt Paneli
 if not st.session_state.logged_in:
+    st.set_page_config(page_title="KXNEKIPASA Login", layout="centered")
     st.title("🔐 KXNEKIPASA Giriş / Kayıt")
 
     tab = st.radio("Seçim Yap", ["Giriş Yap", "Kayıt Ol"])
@@ -74,10 +115,128 @@ if not st.session_state.logged_in:
                 st.success(msg)
             else:
                 st.warning(msg)
+    st.stop()
 
-else:
-    st.success(f"🎉 Hoş geldin, {st.session_state.user['username']}!")
-    if st.button("🔓 Çıkış Yap"):
-        st.session_state.logged_in = False
-        st.experimental_rerun()
-    st.write("Uygulaman burada çalışacak.")
+# --- Giriş Yapılmış Kullanıcılar İçin Uygulama Devamı
+st.set_page_config(page_title="KXNEKIPASA Calculator", layout="wide")
+st.markdown(f"<h1 style='text-align: center; color:#b266ff;'>Hoş geldin, {st.session_state.user['username']}!</h1>", unsafe_allow_html=True)
+st.markdown("---")
+
+region_rates = {
+    "Amerika": 0.0035,
+    "Türkiye": 0.0010,
+    "Avrupa": 0.0025,
+    "Asya": 0.0015,
+    "Dünya Geneli": 0.0020
+}
+
+# Menü Seçimi
+if "menu" not in st.session_state:
+    st.session_state.menu = "profil"
+
+st.markdown("""
+<style>
+div.stButton > button {
+    background-color: white;
+    color: #7e3ff2;
+    border: 2px solid #7e3ff2;
+    border-radius: 15px;
+    padding: 0.75rem 1.5rem;
+    font-weight: bold;
+    transition: 0.3s ease;
+    margin: 10px;
+}
+div.stButton > button:hover {
+    background-color: #7e3ff2;
+    color: white;
+    transform: scale(1.05);
+}
+</style>
+""", unsafe_allow_html=True)
+
+col1, col2, col3, col4 = st.columns(4)
+with col1:
+    if st.button("PROFİL HESAPLAMA"):
+        st.session_state.menu = "profil"
+with col2:
+    if st.button("STREAM HESAPLAMA"):
+        st.session_state.menu = "stream"
+with col3:
+    if st.button("YOUTUBE HESAPLAMA"):
+        st.session_state.menu = "youtube"
+with col4:
+    if st.button("INSTAGRAM VE TIKTOK"):
+        st.session_state.menu = "sosyal"
+
+selected = st.session_state.menu
+
+if selected == "profil":
+    st.header("🎵 Spotify Sanatçı Linki ile Hesaplama")
+    options = {
+        "KXNEKIPASA": "https://open.spotify.com/intl-tr/artist/0pZpo1DFnOHkcSQB2NT1GA",
+        "Başka bir link gireceğim": ""
+    }
+    choice = st.selectbox("Sanatçı seçin veya özel link girin", options.keys())
+    spotify_url = st.text_input("Spotify Sanatçı Linki", value=options[choice])
+    region = st.selectbox("Dinleyici kitlesi bölgesi", list(region_rates.keys()))
+
+    if st.button("Hesapla"):
+        with st.spinner("Veri çekiliyor..."):
+            time.sleep(0.5)
+            artist_id = extract_artist_id(spotify_url)
+            if artist_id:
+                token = get_spotify_token(client_id, client_secret)
+                artist_data = get_artist_data_from_api(artist_id, token)
+                top_tracks = get_artist_top_tracks(artist_id, token)
+
+                if artist_data and top_tracks:
+                    total_popularity = sum([t.get("popularity", 0) for t in top_tracks])
+                    estimated_income = total_popularity * 1000 * region_rates[region]
+
+                    st.markdown(f"<h2 style='text-align: center;'>💰 Tahmini Gelir: ${estimated_income:,.2f} USD</h2>", unsafe_allow_html=True)
+                    st.markdown("---")
+                    st.subheader("🎧 En Popüler Şarkılar")
+                    data = [{
+                        "Şarkı": t["name"],
+                        "Popülarite": t["popularity"],
+                        "Albüm": t["album"]["name"],
+                        "Süre (dk)": round(t["duration_ms"] / 60000, 2)
+                    } for t in sorted(top_tracks, key=lambda x: x['popularity'], reverse=True)]
+                    df = pd.DataFrame(data)
+                    st.dataframe(df, use_container_width=True)
+                else:
+                    st.error("Veri alınamadı.")
+            else:
+                st.warning("Geçerli bir Spotify sanatçı linki girin.")
+
+elif selected == "stream":
+    st.header("📝 Manuel Spotify Dinlenme ile Hesapla")
+    manual_streams = st.number_input("Toplam Dinlenme Sayısı", min_value=0)
+    manual_region = st.selectbox("Bölge", list(region_rates.keys()), key="manual")
+    if st.button("Hesapla"):
+        time.sleep(0.5)
+        income = manual_streams * region_rates[manual_region]
+        st.success(f"Tahmini gelir: ${income:,.2f} USD")
+
+elif selected == "youtube":
+    st.header("▶️ YouTube Topic Görüntülenme ile Gelir")
+    yt_views = st.number_input("YouTube Görüntülenme", min_value=0)
+    if st.button("Hesapla"):
+        yt_income = yt_views * 0.00069
+        st.success(f"YouTube Topic geliri: ${yt_income:,.2f} USD")
+
+elif selected == "sosyal":
+    st.header("📱 Reels ve TikTok Görüntülenme ile Gelir")
+    reels_views = st.number_input("Instagram Reels Görüntülenme", min_value=0)
+    tt_views = st.number_input("TikTok Görüntülenme", min_value=0)
+    if st.button("Hesapla"):
+        reels_income = reels_views * 0.002
+        tt_income = tt_views * 0.015
+        total_income = reels_income + tt_income
+        st.success(f"Toplam gelir: ${total_income:,.2f} USD")
+
+# --- Çıkış Butonu
+st.sidebar.markdown("## 🚪 Oturum")
+if st.sidebar.button("Çıkış Yap"):
+    st.session_state.logged_in = False
+    st.experimental_rerun()
