@@ -90,7 +90,6 @@ if "user" not in st.session_state:
 if "menu" not in st.session_state:
     st.session_state.menu = "profil"
 
-# --- Giriş Ekranı
 if not st.session_state.logged_in:
     st.title("🔐 KXNEKIPASA Giriş / Kayıt")
     tab = st.radio("Seçim Yap", ["Giriş Yap", "Kayıt Ol"])
@@ -118,7 +117,7 @@ if not st.session_state.logged_in:
             else:
                 st.warning(msg)
 
-    return  # Giriş yapılmadıysa uygulama burada durur
+    st.stop()  # ✅ return yerine bunu kullan
 
 # --- Girişten Sonra Ana Sayfa
 st.markdown(f"<h1 style='text-align: center; color:#b266ff;'>Hoş geldin, {st.session_state.user['username']}!</h1>", unsafe_allow_html=True)
