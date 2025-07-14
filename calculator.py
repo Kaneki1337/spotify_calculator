@@ -1,69 +1,65 @@
+# calculator.py
+
 import streamlit as st
-import pandas as pd
-import matplotlib.pyplot as plt
 
-st.set_page_config(page_title="Spotify calculator", layout="centered")
+st.set_page_config(page_title="Spotify Calculator", layout="centered")
+st.title("🎧 Porno Seks Goruntule")
 
-st.title("🎧 Spotify Calculator")
+st.markdown("Manuel giriş yaparak Spotify, YouTube Topic, Instagram ve TikTok için tahmini gelir hesaplayabilirsiniz.")
 
-st.markdown("""
-Bu panelde Spotify ve YouTube gelirlerinizi tahmini olarak hesaplayabilirsiniz.
-Ülke bazlı dinlenme sayısı girerek Spotify gelirini, toplam izlenmeyle de YouTube gelirini öğrenebilirsiniz.
-""")
+st.header("1️⃣ Profil Bilgisi ile Hesaplama")
 
-st.divider()
+with st.expander("Sanatçı profili üzerinden tahmini gelir hesapla (manuel)"):
+    platform = st.selectbox("Platform Seçin", ["Spotify", "YouTube (Topic)", "Instagram", "TikTok"])
 
-st.header("Spotify Dinlenme Verileri")
-ulke_listesi = ["USA", "UK", "Germany", "Turkey", "India", "Other"]
-oranlar = {
-    "USA": 0.004,
-    "UK": 0.0045,
-    "Germany": 0.004,
-    "Turkey": 0.0012,
-    "India": 0.0008,
-    "Other": 0.003
-}
+    if platform == "Spotify":
+        monthly_listeners = st.number_input("Aylık Dinleyici Sayısı", min_value=0)
+        avg_streams_per_listener = st.slider("Kişi başı ortalama dinleme", 1, 20, 5)
+        total_streams = monthly_listeners * avg_streams_per_listener
+        spotify_income = total_streams * 0.003  # 0.003 USD per stream
+        st.success(f"Tahmini Spotify gelir: **${spotify_income:,.2f} USD**")
 
-col1, col2 = st.columns(2)
-dinlenmeler = {}
+    elif platform == "YouTube (Topic)":
+        subs = st.number_input("Abone Sayısı", min_value=0)
+        avg_views = st.number_input("Ortalama Video İzlenme", min_value=0)
+        topic_income = avg_views * 0.002
+        st.success(f"Tahmini YouTube Topic geliri: **${topic_income:,.2f} USD**")
 
-with col1:
-    for ulke in ulke_listesi[:len(ulke_listesi)//2]:
-        sayi = st.number_input(f"{ulke} dinlenme sayısı", min_value=0, step=1000, key=ulke)
-        dinlenmeler[ulke] = sayi
+    elif platform == "Instagram":
+        followers = st.number_input("Takipçi Sayısı", min_value=0)
+        engagement = st.slider("Etkileşim Oranı (%)", 0.0, 20.0, 3.0)
+        insta_income = followers * (engagement / 100) * 0.02
+        st.success(f"Tahmini Instagram geliri: **${insta_income:,.2f} USD**")
 
-with col2:
-    for ulke in ulke_listesi[len(ulke_listesi)//2:]:
-        sayi = st.number_input(f"{ulke} dinlenme sayısı", min_value=0, step=1000, key=ulke)
-        dinlenmeler[ulke] = sayi
+    elif platform == "TikTok":
+        followers = st.number_input("Takipçi Sayısı", min_value=0)
+        avg_views = st.number_input("Ortalama Video İzlenme", min_value=0)
+        tiktok_income = avg_views * 0.015
+        st.success(f"Tahmini TikTok geliri: **${tiktok_income:,.2f} USD**")
 
-spotify_gelir = sum(dinlenmeler[ulke] * oranlar.get(ulke, 0.003) for ulke in dinlenmeler)
+st.header("2️⃣ Doğrudan Veri Girişi ile Hesaplama")
 
-# --- YouTube Bölümü ---
-st.header("YouTube İzlenme Verisi")
-yt_izlenme = st.number_input("Toplam izlenme sayısı", min_value=0, step=1000)
-yt_oran = st.number_input("1 izlenmeden kazanılan gelir ($)", min_value=0.0, value=0.0015, step=0.0001)
-youtube_gelir = yt_izlenme * yt_oran
+with st.expander("Dinlenme / Görüntülenme sayısı girerek hesapla"):
+    platform2 = st.selectbox("Platform Seçin", ["Spotify", "YouTube (Topic)", "Instagram", "TikTok"], key="manual")
 
-# --- Sonuç ---
-st.divider()
-st.subheader("💰 Tahmini Gelir Sonuçları")
-st.metric("Spotify Geliri", f"${spotify_gelir:,.2f}")
-st.metric("YouTube Geliri", f"${youtube_gelir:,.2f}")
-st.success(f"Toplam Tahmini Gelir: ${spotify_gelir + youtube_gelir:,.2f}")
+    if platform2 == "Spotify":
+        streams = st.number_input("Toplam Dinlenme", min_value=0, key="spotify_streams")
+        income = streams * 0.003
+        st.success(f"Tahmini Spotify geliri: **${income:,.2f} USD**")
 
-# --- Grafik ---
-if spotify_gelir > 0:
-    st.subheader("📊 Ülke Bazlı Spotify Gelir Dağılımı")
-    df = pd.DataFrame({
-        "Ülke": list(dinlenmeler.keys()),
-        "Gelir ($)": [dinlenmeler[u] * oranlar.get(u, 0.003) for u in dinlenmeler]
-    })
-    fig, ax = plt.subplots()
-    ax.bar(df["Ülke"], df["Gelir ($)"], color="skyblue")
-    ax.set_ylabel("Gelir ($)")
-    ax.set_title("Spotify Geliri Ülkelere Göre")
-    st.pyplot(fig)
+    elif platform2 == "YouTube (Topic)":
+        views = st.number_input("Toplam Topic Video İzlenme", min_value=0, key="yt_views")
+        income = views * 0.002
+        st.success(f"Tahmini YouTube Topic geliri: **${income:,.2f} USD**")
 
-# --- İpucu ---
-st.info("Sanatçı profiline özel hale getirmek için bu sayfayı paylaşabilir ya da verileri önceden girip ekran görüntüsü alabilirsin.")
+    elif platform2 == "Instagram":
+        followers = st.number_input("Takipçi Sayısı", min_value=0, key="ig_followers")
+        engagement = st.slider("Etkileşim Oranı (%)", min_value=0.0, max_value=20.0, value=3.0, key="ig_engage")
+        income = followers * (engagement / 100) * 0.02
+        st.success(f"Tahmini Instagram geliri: **${income:,.2f} USD**")
+
+    elif platform2 == "TikTok":
+        followers = st.number_input("Takipçi Sayısı", min_value=0, key="tt_followers")
+        avg_views = st.number_input("Ortalama Görüntülenme", min_value=0, key="tt_views")
+        income = avg_views * 0.015
+        st.success(f"Tahmini TikTok geliri: **${income:,.2f} USD**")
