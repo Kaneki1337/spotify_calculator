@@ -104,7 +104,7 @@ if menu == "🎧 Hesaplama Sayfası":
 
     selected = st.session_state.menu
 
-    if selected == "profil":
+       if selected == "profil":
         st.header("🎵 Spotify Sanatçı Linki ile Hesaplama")
         options = {
             "KXNEKIPASA": "https://open.spotify.com/intl-tr/artist/0pZpo1DFnOHkcSQB2NT1GA",
@@ -126,27 +126,36 @@ if menu == "🎧 Hesaplama Sayfası":
                     if artist_data and top_tracks:
                         total_popularity = sum([t.get("popularity", 0) for t in top_tracks])
                         estimated_income = total_popularity * 1000 * region_rates[region]
+                        total_estimated_streams = total_popularity * 1000
 
                         st.markdown(f"<h2 style='text-align: center;'>💰 Tahmini Gelir: ${estimated_income:,.2f} USD</h2>", unsafe_allow_html=True)
                         st.markdown("---")
-                        st.subheader("🎧 En Popüler Şarkılar")
-data = [{
-    "Şarkı": t["name"],
-    "Popülarite": t["popularity"],
-    "Albüm": t["album"]["name"],
-    "Süre (dk)": round(t["duration_ms"] / 60000, 2),
-    "Tahmini Stream": f"{t['popularity'] * 1000:,}".replace(",", ".")  # Türkçe formatlı
-} for t in sorted(top_tracks, key=lambda x: x['popularity'], reverse=True)]
-                        df = pd.DataFrame(data)
-                        st.dataframe(df, use_container_width=True)
 
-                        # Bilgilendirme Notu
+                        st.subheader("🎧 En Popüler Şarkılar")
+
+                        # Bilgilendirme kutusu
                         st.markdown("""
-                        <div style='padding: 1rem; background-color: #828023; border-left: 5px solid #7e3ff2;'>
-                            <strong>⚠️ Not:</strong> Bu hesaplama, Spotify'ın en popüler 10 şarkısının popülerlik puanına göre yapılır.<br>
-                            <strong>1 popülerlik ≈ 1000 stream</strong> olarak varsayılmıştır. Tahmini gelir sadece bilgilendirme amaçlıdır.
+                        <div style='padding: 1rem; background-color: #f9f9f9; border-left: 5px solid #7e3ff2;'>
+                            <strong>ℹ️ Bilgi:</strong> Her <strong>1 popülarite puanı ≈ 1000 stream</strong> olarak varsayılmıştır.
                         </div>
                         """, unsafe_allow_html=True)
+
+                        # Toplam stream bilgisi
+                        st.markdown(f"""
+                        <h4 style='color:#7e3ff2;'>📊 Tahmini Toplam Stream: {total_estimated_streams:,.0f}".replace(",", ".")</h4>
+                        """, unsafe_allow_html=True)
+
+                        # Tablo verileri
+                        data = [{
+                            "Şarkı": t["name"],
+                            "Popülarite": t["popularity"],
+                            "Albüm": t["album"]["name"],
+                            "Süre (dk)": round(t["duration_ms"] / 60000, 2),
+                            "Tahmini Stream": f"{t['popularity'] * 1000:,}".replace(",", ".")
+                        } for t in sorted(top_tracks, key=lambda x: x['popularity'], reverse=True)]
+
+                        df = pd.DataFrame(data)
+                        st.dataframe(df, use_container_width=True)
 
                     else:
                         st.error("Veri alınamadı.")
