@@ -6,9 +6,14 @@ from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 import time
 
-# 🧠 Spotify scraping fonksiyonu
 def get_spotify_monthly_listeners(artist_url):
     try:
+        from selenium import webdriver
+        from selenium.webdriver.chrome.options import Options
+        from selenium.webdriver.common.by import By
+        from selenium.webdriver.support.ui import WebDriverWait
+        from selenium.webdriver.support import expected_conditions as EC
+
         chrome_options = Options()
         chrome_options.add_argument("--headless")
         chrome_options.add_argument("--disable-gpu")
@@ -16,25 +21,15 @@ def get_spotify_monthly_listeners(artist_url):
 
         driver = webdriver.Chrome(options=chrome_options)
         driver.get(artist_url)
-        time.sleep(5)
+        wait = WebDriverWait(driver, 10)
 
-        soup = BeautifulSoup(driver.page_source, 'html.parser')
-        text = soup.get_text()
-
-        for line in text.split('\n'):
-            if 'monthly listeners' in line:
-                parts = line.strip().split(' ')
-                for i, part in enumerate(parts):
-                    if 'monthly' in part:
-                        try:
-                            listeners = parts[i-1].replace(',', '')
-                            listeners = int(float(listeners) * 1000) if 'K' in listeners else \
-                                        int(float(listeners) * 1_000_000) if 'M' in listeners else int(listeners)
-                            driver.quit()
-                            return listeners
-                        except:
-                            continue
+        # Beklenen CSS class'ı
+        element = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="monthly-listeners"]')))
+        text = element.text  # Örn: "20,518 monthly listeners"
         driver.quit()
+
+        listeners = text.split(" ")[0].replace(",", "")
+        return int(listeners)
     except Exception as e:
         return None
 
