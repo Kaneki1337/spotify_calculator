@@ -135,14 +135,14 @@ if menu == "🎧 Hesaplama Sayfası":
 
                         # Bilgilendirme kutusu
                         st.markdown("""
-                        <div style='padding: 1rem; background-color: #f9f9f9; border-left: 5px solid #7e3ff2;'>
+                        <div style='padding: 1rem; background-color: #828023; border-left: 5px solid #7e3ff2;'>
                             <strong>ℹ️ Bilgi:</strong> Her <strong>1 popülarite puanı ≈ 1000 stream</strong> olarak varsayılmıştır.
                         </div>
                         """, unsafe_allow_html=True)
 
                         # Toplam stream bilgisi
                         st.markdown(f"""
-                        <h4 style='color:#7e3ff2;'>📊 Tahmini Toplam Stream: {total_estimated_streams:,.0f}".replace(",", ".")</h4>
+                        <h4 style='color:#7e3ff2;'>📊 Tahmini Toplam Stream: {total_estimated_streams:,.0f}")</h4>
                         """, unsafe_allow_html=True)
 
                         # Tablo verileri
