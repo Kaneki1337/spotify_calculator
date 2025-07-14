@@ -119,7 +119,7 @@ if selected == "profil":
     spotify_url = st.text_input("Spotify Sanatçı Linki", value=options[choice])
     region = st.selectbox("Dinleyici kitlesi bölgesi", list(region_rates.keys()))
 
-    if st.button("💰 Hesapla"):
+    if st.button("Hesapla"):
         artist_id = extract_artist_id(spotify_url)
         if artist_id:
             with st.spinner("Veri çekiliyor..."):
@@ -159,22 +159,34 @@ elif selected == "stream":
     manual_streams = st.number_input("Toplam Dinlenme Sayısı", min_value=0)
     manual_region = st.selectbox("Bölge", list(region_rates.keys()), key="manual")
     manual_income = manual_streams * region_rates[manual_region]
+
+    st.markdown("""
+    <h2 style='text-align: center;'>💰 Tahmini Gelir: ${:,.2f} USD</h2>
+    """.format(manual_income), unsafe_allow_html=True)
     st.success(f"{manual_region} için tahmini gelir: ${manual_income:,.2f} USD")
 
 elif selected == "youtube":
     st.header("▶️ YouTube Topic Görüntülenme ile Gelir")
     yt_views = st.number_input("YouTube Topic Görüntülenme", min_value=0)
     yt_income = yt_views * 0.00069
+
+    st.markdown("""
+    <h2 style='text-align: center;'>💰 Tahmini Gelir: ${:,.2f} USD</h2>
+    """.format(yt_income), unsafe_allow_html=True)
     st.success(f"YouTube Topic geliri: ${yt_income:,.2f} USD")
 
 elif selected == "sosyal":
     st.header("📱 Reels ve TikTok Görüntülenme ile Gelir")
     reels_views = st.number_input("Instagram Reels Görüntülenme", min_value=0)
     reels_income = reels_views * 0.002
-    st.success(f"Instagram Reels geliri: ${reels_income:,.2f} USD")
 
     tt_views = st.number_input("TikTok Görüntülenme", min_value=0)
     tt_income = tt_views * 0.015
+
+    total_income = reels_income + tt_income
+    st.markdown("""
+    <h2 style='text-align: center;'>💰 Tahmini Gelir: ${:,.2f} USD</h2>
+    """.format(total_income), unsafe_allow_html=True)
     st.success(f"TikTok geliri: ${tt_income:,.2f} USD")
 
 # --- Alt Bilgi ---
