@@ -142,7 +142,7 @@ if menu == "🎧 Hesaplama Sayfası":
 
                         # Toplam stream bilgisi
                         st.markdown(f"""
-                        <h4 style='color:#7e3ff2;'>📊 Tahmini Toplam Stream: {total_estimated_streams:,.0f}")</h4>
+                        <h4 style='color:#7e3ff2;'>📊 Tahmini Toplam Stream: {total_estimated_streams:,.0f})</h4>
                         """, unsafe_allow_html=True)
 
                         # Tablo verileri
