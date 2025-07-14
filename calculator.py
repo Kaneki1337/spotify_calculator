@@ -6,7 +6,6 @@ import base64
 from urllib.parse import urlparse
 
 # Spotify artist ID ayıklama
-
 def extract_artist_id(spotify_url):
     try:
         path = urlparse(spotify_url).path
@@ -15,7 +14,6 @@ def extract_artist_id(spotify_url):
         return None
 
 # Spotify API token alma
-
 def get_spotify_token(client_id, client_secret):
     auth_str = f"{client_id}:{client_secret}"
     b64_auth = base64.b64encode(auth_str.encode()).decode()
@@ -33,7 +31,6 @@ def get_spotify_token(client_id, client_secret):
     return token
 
 # Spotify API'den sanatçı verisi alma
-
 def get_artist_data_from_api(artist_id, token):
     url = f"https://api.spotify.com/v1/artists/{artist_id}"
     headers = {
@@ -43,6 +40,23 @@ def get_artist_data_from_api(artist_id, token):
     if response.status_code == 200:
         return response.json()
     return None
+
+# Spotify API'den sanatçının en popüler şarkılarının popularity skorlarını al
+
+def get_artist_top_tracks(artist_id, token):
+    url = f"https://api.spotify.com/v1/artists/{artist_id}/top-tracks?market=US"
+    headers = {
+        "Authorization": f"Bearer {token}"
+    }
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        return response.json().get("tracks", [])
+    return []
+
+# Popularity değerini yaklaşık stream sayısına çevir
+
+def estimate_streams_from_popularity(popularity):
+    return int((popularity / 100) * 5_000_000)  # örnek oran
 
 # Ülkeye göre stream kazanç oranları
 region_rates = {
@@ -61,12 +75,10 @@ st.title("\U0001F3A7 Spotify & Sosyal Medya Gelir Hesaplayıcı")
 st.header("1️⃣ Spotify Sanatçı Linki ile Otomatik Hesapla")
 
 with st.expander("🎵 Spotify sanatçı linkini girerek gelir hesapla"):
-    # Artık sabit Client ID ve Secret kullanılıyor
     client_id = "3bcaf5a985fa491c8b573f9df6fe6e22"
     client_secret = "1de40bfcf93d4bb28eec7ee6f2a660a6"
 
     spotify_url = st.text_input("Spotify Sanatçı Linki", placeholder="https://open.spotify.com/artist/...")
-    avg_streams_per_listener = st.slider("Kişi başı ortalama dinlenme", 1, 20, 5)
     region = st.selectbox("Dinleyici kitlesi bölgesi", list(region_rates.keys()))
 
     if st.button("Veriyi Çek ve Hesapla"):
@@ -75,12 +87,20 @@ with st.expander("🎵 Spotify sanatçı linkini girerek gelir hesapla"):
             with st.spinner("Veri çekiliyor..."):
                 token = get_spotify_token(client_id, client_secret)
                 artist_data = get_artist_data_from_api(artist_id, token)
-                if artist_data:
+                top_tracks = get_artist_top_tracks(artist_id, token)
+
+                if artist_data and top_tracks:
                     followers = artist_data.get("followers", {}).get("total", 0)
-                    total_streams = followers * avg_streams_per_listener
-                    income = total_streams * region_rates[region]
+
+                    estimated_total_streams = 0
+                    for track in top_tracks:
+                        popularity = track.get("popularity", 0)
+                        estimated_streams = estimate_streams_from_popularity(popularity)
+                        estimated_total_streams += estimated_streams
+
+                    income = estimated_total_streams * region_rates[region]
                     st.success(f"Spotify takipçi sayısı: {followers:,}")
-                    st.success(f"Toplam stream tahmini: {total_streams:,}")
+                    st.success(f"En popüler 10 şarkıya göre tahmini toplam stream: {estimated_total_streams:,}")
                     st.success(f"{region} için tahmini gelir: ${income:,.2f} USD")
                 else:
                     st.error("Spotify verisi alınamadı. Artist ID veya token hatalı olabilir.")
