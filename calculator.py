@@ -104,51 +104,54 @@ if menu == "🎧 Hesaplama Sayfası":
 
     selected = st.session_state.menu
 
-   if selected == "profil":
-    st.header("🎵 Spotify Sanatçı Linki ile Hesaplama")
-    options = {
-        "KXNEKIPASA": "https://open.spotify.com/intl-tr/artist/0pZpo1DFnOHkcSQB2NT1GA",
-        "Başka bir link gireceğim": ""
-    }
-    choice = st.selectbox("Sanatçı seçin veya özel link girin", options.keys())
-    spotify_url = st.text_input("Spotify Sanatçı Linki", value=options[choice])
-    region = st.selectbox("Dinleyici kitlesi bölgesi", list(region_rates.keys()))
+    if selected == "profil":
+        st.header("🎵 Spotify Sanatçı Linki ile Hesaplama")
+        options = {
+            "KXNEKIPASA": "https://open.spotify.com/intl-tr/artist/0pZpo1DFnOHkcSQB2NT1GA",
+            "Başka bir link gireceğim": ""
+        }
+        choice = st.selectbox("Sanatçı seçin veya özel link girin", options.keys())
+        spotify_url = st.text_input("Spotify Sanatçı Linki", value=options[choice])
+        region = st.selectbox("Dinleyici kitlesi bölgesi", list(region_rates.keys()))
 
-    if st.button("Hesapla"):
-        with st.spinner("Veri çekiliyor..."):
-            time.sleep(0.5)
-            artist_id = extract_artist_id(spotify_url)
-            if artist_id:
-                token = get_spotify_token(client_id, client_secret)
-                artist_data = get_artist_data_from_api(artist_id, token)
-                top_tracks = get_artist_top_tracks(artist_id, token)
+        if st.button("Hesapla"):
+            with st.spinner("Veri çekiliyor..."):
+                time.sleep(0.5)
+                artist_id = extract_artist_id(spotify_url)
+                if artist_id:
+                    token = get_spotify_token(client_id, client_secret)
+                    artist_data = get_artist_data_from_api(artist_id, token)
+                    top_tracks = get_artist_top_tracks(artist_id, token)
 
-                if artist_data and top_tracks:
-                    total_popularity = sum([t.get("popularity", 0) for t in top_tracks])
-                    estimated_income = total_popularity * 1000 * region_rates[region]
+                    if artist_data and top_tracks:
+                        total_popularity = sum([t.get("popularity", 0) for t in top_tracks])
+                        estimated_income = total_popularity * 1000 * region_rates[region]
 
-                    st.markdown(f"<h2 style='text-align: center;'>💰 Tahmini Gelir: ${estimated_income:,.2f} USD</h2>", unsafe_allow_html=True)
-                    st.markdown("---")
-                    st.subheader("🎧 En Popüler Şarkılar")
-                    data = [{
-                        "Şarkı": t["name"],
-                        "Popülarite": t["popularity"],
-                        "Albüm": t["album"]["name"],
-                        "Süre (dk)": round(t["duration_ms"] / 60000, 2)
-                    } for t in sorted(top_tracks, key=lambda x: x['popularity'], reverse=True)]
-                    df = pd.DataFrame(data)
-                    st.dataframe(df, use_container_width=True)
+                        st.markdown(f"<h2 style='text-align: center;'>💰 Tahmini Gelir: ${estimated_income:,.2f} USD</h2>", unsafe_allow_html=True)
+                        st.markdown("---")
+                        st.subheader("🎧 En Popüler Şarkılar")
+                        data = [{
+                            "Şarkı": t["name"],
+                            "Popülarite": t["popularity"],
+                            "Albüm": t["album"]["name"],
+                            "Süre (dk)": round(t["duration_ms"] / 60000, 2)
+                        } for t in sorted(top_tracks, key=lambda x: x['popularity'], reverse=True)]
+                        df = pd.DataFrame(data)
+                        st.dataframe(df, use_container_width=True)
 
-                    # Bilgilendirme notu
-                    st.markdown("""
-                    <div style='padding: 1rem; background-color: #f9f9f9; border-left: 5px solid #7e3ff2;'>
-                        <strong>⚠️ Not:</strong> Bu hesaplama, Spotify'ın en popüler 10 şarkısının popülerlik puanına göre yapılır. <br>
-                        <strong>1 popülerlik ≈ 1000 stream</strong> olarak varsayılmıştır. Tahmini gelir sadece bilgilendirme amaçlıdır.
-                    </div>
-                    """, unsafe_allow_html=True)
+                        # Bilgilendirme Notu
+                        st.markdown("""
+                        <div style='padding: 1rem; background-color: #f9f9f9; border-left: 5px solid #7e3ff2;'>
+                            <strong>⚠️ Not:</strong> Bu hesaplama, Spotify'ın en popüler 10 şarkısının popülerlik puanına göre yapılır.<br>
+                            <strong>1 popülerlik ≈ 1000 stream</strong> olarak varsayılmıştır. Tahmini gelir sadece bilgilendirme amaçlıdır.
+                        </div>
+                        """, unsafe_allow_html=True)
 
+                    else:
+                        st.error("Veri alınamadı.")
                 else:
-                    st.error("Veri alınamadı.")
+                    st.warning("Geçerli bir Spotify sanatçı linki girin.")
+
 
     elif selected == "stream":
         st.header("📝 Manuel Spotify Dinlenme ile Hesapla")
