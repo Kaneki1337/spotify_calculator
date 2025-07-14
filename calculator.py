@@ -44,6 +44,8 @@ div.stButton > button:hover {
 """, unsafe_allow_html=True)
 
 # --- Menü Butonları ---
+if "search_artist" not in st.session_state:
+    st.session_state.search_artist = None
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
@@ -61,6 +63,57 @@ with col3:
 with col4:
     if st.button("INSTAGRAM VE TIKTOK HESAPLAMA"):
         st.session_state.menu = "sosyal"
+
+with st.container():
+    if st.button("🔍 SANATÇI ARA"):
+        st.session_state.menu = "search"
+
+if st.session_state.menu == "search":
+    st.header("🔍 Spotify'da Sanatçı Ara")
+    search_query = st.text_input("Sanatçı Adı Girin")
+
+    if search_query:
+        token = get_spotify_token(client_id, client_secret)
+        search_url = f"https://api.spotify.com/v1/search?q={search_query}&type=artist&limit=10"
+        headers = {"Authorization": f"Bearer {token}"}
+        response = requests.get(search_url, headers=headers)
+        results = response.json().get("artists", {}).get("items", [])
+
+        for artist in results:
+            col1, col2 = st.columns([1, 5])
+            with col1:
+                st.image(artist['images'][0]['url'] if artist['images'] else None, width=64)
+            with col2:
+                if st.button(f"{artist['name']} ({artist['followers']['total']:,} takipçi)", key=artist['id']):
+                    st.session_state.search_artist = artist['id']
+
+    if st.session_state.search_artist:
+        token = get_spotify_token(client_id, client_secret)
+        artist_data = get_artist_data_from_api(st.session_state.search_artist, token)
+        top_tracks = get_artist_top_tracks(st.session_state.search_artist, token)
+
+        if artist_data and top_tracks:
+            region = st.selectbox("Dinleyici kitlesi bölgesi", list(region_rates.keys()), key="region_search")
+            followers = artist_data.get("followers", {}).get("total", 0)
+            total_popularity = sum([t.get("popularity", 0) for t in top_tracks])
+            estimated_income = total_popularity * 1000 * region_rates[region]
+
+            st.markdown("""
+            <h2 style='text-align: center;'>💰 Tahmini Gelir: ${:,.2f} USD</h2>
+            """.format(estimated_income), unsafe_allow_html=True)
+
+            st.markdown("---")
+            st.subheader(f"🎧 {artist_data['name']} - En Popüler Şarkılar")
+            data = []
+            for t in sorted(top_tracks, key=lambda x: x['popularity'], reverse=True):
+                data.append({
+                    "Şarkı": t["name"],
+                    "Popülarite": t["popularity"],
+                    "Albüm": t["album"]["name"],
+                    "Süre (dk)": round(t["duration_ms"] / 60000, 2)
+                })
+            df = pd.DataFrame(data)
+            st.dataframe(df, use_container_width=True)
 
 selected = st.session_state.menu
 
