@@ -106,20 +106,6 @@ def get_artist_top_tracks(artist_id, token):
     r = requests.get(url, headers=headers)
     return r.json().get("tracks", []) if r.status_code == 200 else []
 
-def estimate_streams_from_popularity(pop):
-    if pop >= 90:
-        return 50_000_000
-    elif pop >= 80:
-        return 10_000_000
-    elif pop >= 70:
-        return 5_000_000
-    elif pop >= 60:
-        return 1_000_000
-    elif pop >= 50:
-        return 500_000
-    else:
-        return 100_000
-
 # --- Seçilen Menüye Göre İçerik ---
 if selected == "profil":
     st.header("🎵 Spotify Sanatçı Linki ile Hesaplama")
@@ -133,7 +119,7 @@ if selected == "profil":
     spotify_url = st.text_input("Spotify Sanatçı Linki", value=options[choice])
     region = st.selectbox("Dinleyici kitlesi bölgesi", list(region_rates.keys()))
 
-    if st.button("Veriyi Çek ve Hesapla"):
+    if st.button("💰 Hesapla"):
         artist_id = extract_artist_id(spotify_url)
         if artist_id:
             with st.spinner("Veri çekiliyor..."):
@@ -143,34 +129,26 @@ if selected == "profil":
 
                 if artist_data and top_tracks:
                     followers = artist_data.get("followers", {}).get("total", 0)
-                    total_streams = sum([estimate_streams_from_popularity(t.get("popularity", 0)) for t in top_tracks])
-                    income = total_streams * region_rates[region]
+                    # Kazanç tahmini için sadece popülariteye dayalı kabaca toplam skor
+                    total_popularity = sum([t.get("popularity", 0) for t in top_tracks])
+                    estimated_income = total_popularity * 1000 * region_rates[region]  # pop score * 1K stream * rate
 
-                    st.success(f"Takipçi: {followers:,}")
-                    st.success(f"Tahmini Toplam Dinlenme: {total_streams:,}")
-                    st.success(f"Tahmini Gelir: ${income:,.2f} USD")
+                    st.markdown("""
+                    <h2 style='text-align: center;'>💰 Tahmini Gelir: ${:,.2f} USD</h2>
+                    """.format(estimated_income), unsafe_allow_html=True)
 
                     st.markdown("---")
-                    st.subheader("🎧 En Popüler Şarkılar")
+                    st.subheader("🎧 En Popüler Şarkılar (Popülerliğe Göre Sıralı)")
                     data = []
-                    for t in top_tracks:
+                    for t in sorted(top_tracks, key=lambda x: x['popularity'], reverse=True):
                         data.append({
                             "Şarkı": t["name"],
                             "Popülarite": t["popularity"],
-                            "Tahmini Dinlenme": estimate_streams_from_popularity(t["popularity"]),
                             "Albüm": t["album"]["name"],
                             "Süre (dk)": round(t["duration_ms"] / 60000, 2)
                         })
-
                     df = pd.DataFrame(data)
                     st.dataframe(df, use_container_width=True)
-
-                    chart = alt.Chart(df).mark_bar().encode(
-                        x=alt.X("Şarkı", sort="-y"),
-                        y="Tahmini Dinlenme",
-                        tooltip=["Şarkı", "Popülarite", "Tahmini Dinlenme"]
-                    ).properties(height=400)
-                    st.altair_chart(chart, use_container_width=True)
                 else:
                     st.error("Veri alınamadı.")
         else:
