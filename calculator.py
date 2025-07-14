@@ -141,7 +141,7 @@ if menu == "🎧 Hesaplama Sayfası":
 
                         # Bilgilendirme Notu
                         st.markdown("""
-                        <div style='padding: 1rem; background-color: #f9f9f9; border-left: 5px solid #7e3ff2;'>
+                        <div style='padding: 1rem; background-color: #828023; border-left: 5px solid #7e3ff2;'>
                             <strong>⚠️ Not:</strong> Bu hesaplama, Spotify'ın en popüler 10 şarkısının popülerlik puanına göre yapılır.<br>
                             <strong>1 popülerlik ≈ 1000 stream</strong> olarak varsayılmıştır. Tahmini gelir sadece bilgilendirme amaçlıdır.
                         </div>
