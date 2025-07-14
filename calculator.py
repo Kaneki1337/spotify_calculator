@@ -2,33 +2,47 @@
 
 import streamlit as st
 import requests
-from bs4 import BeautifulSoup
+import base64
+from urllib.parse import urlparse
 
 # Spotify artist ID ayıklama
 
 def extract_artist_id(spotify_url):
     try:
-        return spotify_url.split("/")[-1].split("?")[0]
+        path = urlparse(spotify_url).path
+        return path.split("/")[-1]
     except:
         return None
 
-# SpotOnTrack scraping fonksiyonu
+# Spotify API token alma
 
-def get_spotify_listeners_spotontrack(artist_id):
-    try:
-        url = f"https://www.spotontrack.com/artist/{artist_id}"
-        headers = {"User-Agent": "Mozilla/5.0"}
-        response = requests.get(url, headers=headers)
-        soup = BeautifulSoup(response.text, "html.parser")
-        element = soup.find("div", class_="artist__monthly_listeners")
+def get_spotify_token(client_id, client_secret):
+    auth_str = f"{client_id}:{client_secret}"
+    b64_auth = base64.b64encode(auth_str.encode()).decode()
 
-        if element:
-            text = element.get_text(strip=True).replace(",", "").replace(" listeners", "")
-            return int(text)
-        else:
-            return None
-    except:
-        return None
+    headers = {
+        "Authorization": f"Basic {b64_auth}",
+        "Content-Type": "application/x-www-form-urlencoded"
+    }
+    data = {
+        "grant_type": "client_credentials"
+    }
+
+    r = requests.post("https://accounts.spotify.com/api/token", headers=headers, data=data)
+    token = r.json().get("access_token")
+    return token
+
+# Spotify API'den sanatçı verisi alma
+
+def get_artist_data_from_api(artist_id, token):
+    url = f"https://api.spotify.com/v1/artists/{artist_id}"
+    headers = {
+        "Authorization": f"Bearer {token}"
+    }
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        return response.json()
+    return None
 
 # Ülkeye göre stream kazanç oranları
 region_rates = {
@@ -47,6 +61,10 @@ st.title("\U0001F3A7 Spotify & Sosyal Medya Gelir Hesaplayıcı")
 st.header("1️⃣ Spotify Sanatçı Linki ile Otomatik Hesapla")
 
 with st.expander("🎵 Spotify sanatçı linkini girerek gelir hesapla"):
+    # Artık sabit Client ID ve Secret kullanılıyor
+    client_id = "3bcaf5a985fa491c8b573f9df6fe6e22"
+    client_secret = "1de40bfcf93d4bb28eec7ee6f2a660a6"
+
     spotify_url = st.text_input("Spotify Sanatçı Linki", placeholder="https://open.spotify.com/artist/...")
     avg_streams_per_listener = st.slider("Kişi başı ortalama dinlenme", 1, 20, 5)
     region = st.selectbox("Dinleyici kitlesi bölgesi", list(region_rates.keys()))
@@ -55,15 +73,17 @@ with st.expander("🎵 Spotify sanatçı linkini girerek gelir hesapla"):
         artist_id = extract_artist_id(spotify_url)
         if artist_id:
             with st.spinner("Veri çekiliyor..."):
-                listeners = get_spotify_listeners_spotontrack(artist_id)
-                if listeners:
-                    total_streams = listeners * avg_streams_per_listener
+                token = get_spotify_token(client_id, client_secret)
+                artist_data = get_artist_data_from_api(artist_id, token)
+                if artist_data:
+                    followers = artist_data.get("followers", {}).get("total", 0)
+                    total_streams = followers * avg_streams_per_listener
                     income = total_streams * region_rates[region]
-                    st.success(f"Aylık dinleyici: {listeners:,}")
+                    st.success(f"Spotify takipçi sayısı: {followers:,}")
                     st.success(f"Toplam stream tahmini: {total_streams:,}")
                     st.success(f"{region} için tahmini gelir: ${income:,.2f} USD")
                 else:
-                    st.error("Dinleyici bilgisi alınamadı. Sanatçı SpotOnTrack'te olmayabilir.")
+                    st.error("Spotify verisi alınamadı. Artist ID veya token hatalı olabilir.")
         else:
             st.warning("Geçerli bir Spotify sanatçı linki girin.")
 
