@@ -145,39 +145,36 @@ if menu == "🎧 Hesaplama Sayfası":
 
     elif selected == "stream":
         st.header("📝 Manuel Spotify Dinlenme ile Hesapla")
-        manual_streams = st.number_input("Toplam Dinlenme Sayısı", min_value=0, step=1, format="%d")
-        if manual_streams:
-            formatted_streams = f"{manual_streams:,}".replace(",", ".")
-            st.markdown(f"**Girdiğiniz sayı:** `{formatted_streams}`")
+
+        raw_input = st.text_input("Toplam Dinlenme Sayısı (örn: 100.000)", value="")
+        manual_streams = 0
+        valid_input = False
+
+        if raw_input:
+            try:
+                manual_streams = int(raw_input.replace(".", "").replace(",", ""))
+                valid_input = True
+                st.markdown(f"**Girdiğiniz sayı:** `{manual_streams:,}`".replace(",", "."))
+            except ValueError:
+                st.warning("Lütfen sadece sayı girin (örn: 100.000)")
 
         manual_region = st.selectbox("Bölge", list(region_rates.keys()), key="manual")
-        if st.button("Hesapla"):
-            time.sleep(0.5)
+
+        if st.button("Hesapla") and valid_input:
             income = manual_streams * region_rates[manual_region]
             st.success(f"Tahmini gelir: ${income:,.2f} USD")
 
     elif selected == "youtube":
         st.header("▶️ YouTube Topic Görüntülenme ile Gelir")
-        yt_views = st.number_input("YouTube Görüntülenme", min_value=0, step=1, format="%d")
-        if yt_views:
-            formatted_views = f"{yt_views:,}".replace(",", ".")
-            st.markdown(f"**Girdiğiniz sayı:** `{formatted_views}`")
+        yt_views = st.number_input("YouTube Görüntülenme", min_value=0)
         if st.button("Hesapla"):
             yt_income = yt_views * 0.00069
             st.success(f"YouTube Topic geliri: ${yt_income:,.2f} USD")
 
     elif selected == "sosyal":
         st.header("📱 Reels ve TikTok Görüntülenme ile Gelir")
-        reels_views = st.number_input("Instagram Reels Görüntülenme", min_value=0, step=1, format="%d")
-        if reels_views:
-            formatted_reels = f"{reels_views:,}".replace(",", ".")
-            st.markdown(f"**Instagram görüntülenme:** `{formatted_reels}`")
-
-        tt_views = st.number_input("TikTok Görüntülenme", min_value=0, step=1, format="%d")
-        if tt_views:
-            formatted_tt = f"{tt_views:,}".replace(",", ".")
-            st.markdown(f"**TikTok görüntülenme:** `{formatted_tt}`")
-
+        reels_views = st.number_input("Instagram Reels Görüntülenme", min_value=0)
+        tt_views = st.number_input("TikTok Görüntülenme", min_value=0)
         if st.button("Hesapla"):
             reels_income = reels_views * 0.002
             tt_income = tt_views * 0.015
