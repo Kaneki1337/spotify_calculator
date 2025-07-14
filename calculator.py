@@ -63,10 +63,12 @@ if "menu" not in st.session_state:
 if st.experimental_get_query_params().get("menu"):
     st.session_state.menu = st.experimental_get_query_params()["menu"][0]
 
-# Formlar arası geçiş (POST gibi çalıştırmak için workaround)
+# Menü seçimi session_state ile
+if "menu" not in st.session_state:
+    st.session_state.menu = "profil"  # default sayfa
+
+# Butona basınca çalışması için bir workaround'a gerek yok artık
 selected = st.session_state.menu
-if "form_post" in st.query_params:
-    selected = st.query_params["form_post"]
 
 # --- Kazanç oranları ---
 region_rates = {
