@@ -18,9 +18,6 @@ load_dotenv()
 client_id = os.getenv("SPOTIFY_CLIENT_ID")
 client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
 
-if __name__ == "__main__":
-    main()
-
 # Spotify API Fonksiyonları
 def extract_artist_id(spotify_url):
     try:
