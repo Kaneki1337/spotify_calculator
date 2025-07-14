@@ -124,15 +124,14 @@ def estimate_streams_from_popularity(pop):
 if selected == "profil":
     st.header("🎵 Spotify Sanatçı Linki ile Hesaplama")
 
-    default_link = "https://open.spotify.com/intl-tr/artist/0pZpo1DFnOHkcSQB2NT1GA?si=oyWBZfU2QxSCqKFqgtQL1A"
+    options = {
+        "KXNEKIPASA": "https://open.spotify.com/intl-tr/artist/0pZpo1DFnOHkcSQB2NT1GA?si=oyWBZfU2QxSCqKFqgtQL1A",
+        "Başka bir link gireceğim": ""
+    }
 
-    st.markdown("""
-    <a href="{0}" target="_self" style="color:#b266ff; font-weight:bold;">
-        🎧 KXNEKIPASA profiline otomatik git
-    </a>
-    """.format(default_link), unsafe_allow_html=True)
+    choice = st.selectbox("Sanatçı seçin veya özel link girin", options.keys())
+    spotify_url = st.text_input("Spotify Sanatçı Linki", value=options[choice])
 
-    spotify_url = st.text_input("Spotify Sanatçı Linki", value=default_link)
     region = st.selectbox("Dinleyici kitlesi bölgesi", list(region_rates.keys()))
 
     if st.button("Veriyi Çek ve Hesapla"):
