@@ -149,8 +149,6 @@ if menu == "🎧 Hesaplama Sayfası":
 
                 else:
                     st.error("Veri alınamadı.")
-            else:
-                st.warning("Geçerli bir Spotify sanatçı linki girin.")
 
     elif selected == "stream":
         st.header("📝 Manuel Spotify Dinlenme ile Hesapla")
