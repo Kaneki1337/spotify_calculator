@@ -42,7 +42,6 @@ def get_artist_data_from_api(artist_id, token):
     return None
 
 # Spotify API'den sanatçının en popüler şarkılarının popularity skorlarını al
-
 def get_artist_top_tracks(artist_id, token):
     url = f"https://api.spotify.com/v1/artists/{artist_id}/top-tracks?market=US"
     headers = {
@@ -54,7 +53,6 @@ def get_artist_top_tracks(artist_id, token):
     return []
 
 # Popularity değerini yaklaşık stream sayısına çevir
-
 def estimate_streams_from_popularity(popularity):
     return int((popularity / 100) * 5_000_000)  # örnek oran
 
@@ -127,3 +125,11 @@ with st.expander("📝 Manuel stream girerek hesapla"):
     manual_region = st.selectbox("Bölge", list(region_rates.keys()), key="manual")
     manual_income = manual_streams * region_rates[manual_region]
     st.success(f"{manual_region} için tahmini gelir: ${manual_income:,.2f} USD")
+
+# --- 4. YouTube Topic Şarkı Geliri ---
+st.header("4️⃣ YouTube Topic Geliri")
+
+with st.expander("▶️ YouTube Topic görüntülenme ile gelir hesapla"):
+    yt_views = st.number_input("YouTube Topic Görüntülenme", min_value=0)
+    yt_income = yt_views * 0.00069  # Ortalama YouTube Music gelir oranı
+    st.success(f"YouTube Topic şarkı geliri: ${yt_income:,.2f} USD")
