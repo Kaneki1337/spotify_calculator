@@ -18,31 +18,6 @@ load_dotenv()
 client_id = os.getenv("SPOTIFY_CLIENT_ID")
 client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
 
-def format_with_thousands_sep(n):
-    """
-    Girilen sayıyı binlik ayırıcılarla noktalanmış hale getirir.
-    Örn: 100000 -> 100.000
-    """
-    try:
-        # Önce sayısal formata çevir (int veya float olabilir)
-        if '.' in n:
-            num = float(n)
-            # Ondalıklı kısmı da dahil ederek virgülle formatla
-            whole, frac = str(num).split('.')
-            whole_int = int(whole)
-            formatted_whole = f"{whole_int:,}".replace(",", ".")
-            return f"{formatted_whole},{frac}"
-        else:
-            num = int(n)
-            return f"{num:,}".replace(",", ".")
-    except (ValueError, TypeError):
-        return n  # Eğer dönüşüm yapılmazsa orijinal inputu geri gönder
-
-def main():
-    user_input = input("Sayı girin: ").strip()
-    formatted = format_with_thousands_sep(user_input)
-    print("Girilen sayı (formatlı):", formatted)
-
 if __name__ == "__main__":
     main()
 
