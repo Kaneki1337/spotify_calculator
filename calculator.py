@@ -15,7 +15,7 @@ st.set_page_config(page_title="KXNEKIPASA", layout="wide")
 load_dotenv()
 client_id = os.getenv("SPOTIFY_CLIENT_ID")
 client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
-WEBHOOK_URL = "https://canary.discord.com/api/webhooks/..."  # Webhook URL'ni buraya koy
+WEBHOOK_URL = "https://canary.discord.com/api/webhooks/1394242204628946974/6CZf6_OXWY5SLXPZZm3DWd3Y3XER3eHIiuzvCVBNcS44DfrbGYloC8-XH4VuKxhgfhgV"  # Webhook URL'ni buraya koy
 
 # --- Kullanıcı veri dosyası (kullanılmasa da kalsın)
 USER_DB = "users.json"
