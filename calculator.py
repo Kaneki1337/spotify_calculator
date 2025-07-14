@@ -104,7 +104,7 @@ if menu == "🎧 Hesaplama Sayfası":
 
     selected = st.session_state.menu
 
-       if selected == "profil":
+    if selected == "profil":
         st.header("🎵 Spotify Sanatçı Linki ile Hesaplama")
         options = {
             "KXNEKIPASA": "https://open.spotify.com/intl-tr/artist/0pZpo1DFnOHkcSQB2NT1GA",
