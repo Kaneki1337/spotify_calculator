@@ -5,7 +5,7 @@ import requests
 import base64
 from urllib.parse import urlparse
 import pandas as pd
-import altair as alt
+import time  # Bekleme için
 
 # --- .env yükle
 load_dotenv()
@@ -18,7 +18,7 @@ st.markdown("""
     <h1 style='text-align: center; color:#b266ff;'>KXNEKIPASA CALCULATOR</h1>
 """, unsafe_allow_html=True)
 
-# --- Menü Seçimi (session_state ile)
+# --- Menü Seçimi ---
 if "menu" not in st.session_state:
     st.session_state.menu = "profil"
 
@@ -44,76 +44,19 @@ div.stButton > button:hover {
 """, unsafe_allow_html=True)
 
 # --- Menü Butonları ---
-if "search_artist" not in st.session_state:
-    st.session_state.search_artist = None
 col1, col2, col3, col4 = st.columns(4)
-
 with col1:
     if st.button("PROFİL HESAPLAMA"):
         st.session_state.menu = "profil"
-
 with col2:
     if st.button("STREAM HESAPLAMA"):
         st.session_state.menu = "stream"
-
 with col3:
     if st.button("YOUTUBE HESAPLAMA"):
         st.session_state.menu = "youtube"
-
 with col4:
     if st.button("INSTAGRAM VE TIKTOK HESAPLAMA"):
         st.session_state.menu = "sosyal"
-
-with st.container():
-    if st.button("🔍 SANATÇI ARA"):
-        st.session_state.menu = "search"
-
-if st.session_state.menu == "search":
-    st.header("🔍 Spotify'da Sanatçı Ara")
-    search_query = st.text_input("Sanatçı Adı Girin")
-
-    if search_query:
-        token = get_spotify_token(client_id, client_secret)
-        search_url = f"https://api.spotify.com/v1/search?q={search_query}&type=artist&limit=10"
-        headers = {"Authorization": f"Bearer {token}"}
-        response = requests.get(search_url, headers=headers)
-        results = response.json().get("artists", {}).get("items", [])
-
-        for artist in results:
-            col1, col2 = st.columns([1, 5])
-            with col1:
-                st.image(artist['images'][0]['url'] if artist['images'] else None, width=64)
-            with col2:
-                if st.button(f"{artist['name']} ({artist['followers']['total']:,} takipçi)", key=artist['id']):
-                    st.session_state.search_artist = artist['id']
-
-    if st.session_state.search_artist:
-        token = get_spotify_token(client_id, client_secret)
-        artist_data = get_artist_data_from_api(st.session_state.search_artist, token)
-        top_tracks = get_artist_top_tracks(st.session_state.search_artist, token)
-
-        if artist_data and top_tracks:
-            region = st.selectbox("Dinleyici kitlesi bölgesi", list(region_rates.keys()), key="region_search")
-            followers = artist_data.get("followers", {}).get("total", 0)
-            total_popularity = sum([t.get("popularity", 0) for t in top_tracks])
-            estimated_income = total_popularity * 1000 * region_rates[region]
-
-            st.markdown("""
-            <h2 style='text-align: center;'>💰 Tahmini Gelir: ${:,.2f} USD</h2>
-            """.format(estimated_income), unsafe_allow_html=True)
-
-            st.markdown("---")
-            st.subheader(f"🎧 {artist_data['name']} - En Popüler Şarkılar")
-            data = []
-            for t in sorted(top_tracks, key=lambda x: x['popularity'], reverse=True):
-                data.append({
-                    "Şarkı": t["name"],
-                    "Popülarite": t["popularity"],
-                    "Albüm": t["album"]["name"],
-                    "Süre (dk)": round(t["duration_ms"] / 60000, 2)
-                })
-            df = pd.DataFrame(data)
-            st.dataframe(df, use_container_width=True)
 
 selected = st.session_state.menu
 
@@ -141,9 +84,7 @@ def get_spotify_token(client_id, client_secret):
         "Authorization": f"Basic {b64_auth}",
         "Content-Type": "application/x-www-form-urlencoded"
     }
-    data = {
-        "grant_type": "client_credentials"
-    }
+    data = {"grant_type": "client_credentials"}
     r = requests.post("https://accounts.spotify.com/api/token", headers=headers, data=data)
     return r.json().get("access_token")
 
@@ -159,7 +100,7 @@ def get_artist_top_tracks(artist_id, token):
     r = requests.get(url, headers=headers)
     return r.json().get("tracks", []) if r.status_code == 200 else []
 
-# --- Seçilen Menüye Göre İçerik ---
+# --- PROFİL HESAPLAMA ---
 if selected == "profil":
     st.header("🎵 Spotify Sanatçı Linki ile Hesaplama")
 
@@ -173,74 +114,73 @@ if selected == "profil":
     region = st.selectbox("Dinleyici kitlesi bölgesi", list(region_rates.keys()))
 
     if st.button("Hesapla"):
-        artist_id = extract_artist_id(spotify_url)
-        if artist_id:
-            with st.spinner("Veri çekiliyor..."):
+        with st.spinner("Veri çekiliyor..."):
+            time.sleep(0.5)
+            artist_id = extract_artist_id(spotify_url)
+            if artist_id:
                 token = get_spotify_token(client_id, client_secret)
                 artist_data = get_artist_data_from_api(artist_id, token)
                 top_tracks = get_artist_top_tracks(artist_id, token)
 
                 if artist_data and top_tracks:
-                    followers = artist_data.get("followers", {}).get("total", 0)
-                    # Kazanç tahmini için sadece popülariteye dayalı kabaca toplam skor
                     total_popularity = sum([t.get("popularity", 0) for t in top_tracks])
-                    estimated_income = total_popularity * 1000 * region_rates[region]  # pop score * 1K stream * rate
+                    estimated_income = total_popularity * 1000 * region_rates[region]
 
-                    st.markdown("""
-                    <h2 style='text-align: center;'>💰 Tahmini Gelir: ${:,.2f} USD</h2>
-                    """.format(estimated_income), unsafe_allow_html=True)
-
+                    st.markdown(f"<h2 style='text-align: center;'>💰 Tahmini Gelir: ${estimated_income:,.2f} USD</h2>", unsafe_allow_html=True)
                     st.markdown("---")
                     st.subheader("🎧 En Popüler Şarkılar (Popülerliğe Göre Sıralı)")
-                    data = []
-                    for t in sorted(top_tracks, key=lambda x: x['popularity'], reverse=True):
-                        data.append({
-                            "Şarkı": t["name"],
-                            "Popülarite": t["popularity"],
-                            "Albüm": t["album"]["name"],
-                            "Süre (dk)": round(t["duration_ms"] / 60000, 2)
-                        })
+                    data = [{
+                        "Şarkı": t["name"],
+                        "Popülarite": t["popularity"],
+                        "Albüm": t["album"]["name"],
+                        "Süre (dk)": round(t["duration_ms"] / 60000, 2)
+                    } for t in sorted(top_tracks, key=lambda x: x['popularity'], reverse=True)]
                     df = pd.DataFrame(data)
                     st.dataframe(df, use_container_width=True)
                 else:
                     st.error("Veri alınamadı.")
-        else:
-            st.warning("Geçerli bir Spotify sanatçı linki girin.")
+            else:
+                st.warning("Geçerli bir Spotify sanatçı linki girin.")
 
+# --- STREAM HESAPLAMA ---
 elif selected == "stream":
     st.header("📝 Manuel Spotify Dinlenme ile Hesapla")
     manual_streams = st.number_input("Toplam Dinlenme Sayısı", min_value=0)
     manual_region = st.selectbox("Bölge", list(region_rates.keys()), key="manual")
-    manual_income = manual_streams * region_rates[manual_region]
 
-    st.markdown("""
-    <h2 style='text-align: center;'>💰 Tahmini Gelir: ${:,.2f} USD</h2>
-    """.format(manual_income), unsafe_allow_html=True)
-    st.success(f"{manual_region} için tahmini gelir: ${manual_income:,.2f} USD")
+    if st.button("Hesapla"):
+        with st.spinner("Hesaplanıyor..."):
+            time.sleep(0.5)
+            manual_income = manual_streams * region_rates[manual_region]
+            st.markdown(f"<h2 style='text-align: center;'>💰 Tahmini Gelir: ${manual_income:,.2f} USD</h2>", unsafe_allow_html=True)
+            st.success(f"{manual_region} için tahmini gelir: ${manual_income:,.2f} USD")
 
+# --- YOUTUBE HESAPLAMA ---
 elif selected == "youtube":
     st.header("▶️ YouTube Topic Görüntülenme ile Gelir")
     yt_views = st.number_input("YouTube Topic Görüntülenme", min_value=0)
-    yt_income = yt_views * 0.00069
 
-    st.markdown("""
-    <h2 style='text-align: center;'>💰 Tahmini Gelir: ${:,.2f} USD</h2>
-    """.format(yt_income), unsafe_allow_html=True)
-    st.success(f"YouTube Topic geliri: ${yt_income:,.2f} USD")
+    if st.button("Hesapla"):
+        with st.spinner("Hesaplanıyor..."):
+            time.sleep(0.5)
+            yt_income = yt_views * 0.00069
+            st.markdown(f"<h2 style='text-align: center;'>💰 Tahmini Gelir: ${yt_income:,.2f} USD</h2>", unsafe_allow_html=True)
+            st.success(f"YouTube Topic geliri: ${yt_income:,.2f} USD")
 
+# --- SOSYAL MEDYA HESAPLAMA ---
 elif selected == "sosyal":
     st.header("📱 Reels ve TikTok Görüntülenme ile Gelir")
     reels_views = st.number_input("Instagram Reels Görüntülenme", min_value=0)
-    reels_income = reels_views * 0.002
-
     tt_views = st.number_input("TikTok Görüntülenme", min_value=0)
-    tt_income = tt_views * 0.015
 
-    total_income = reels_income + tt_income
-    st.markdown("""
-    <h2 style='text-align: center;'>💰 Tahmini Gelir: ${:,.2f} USD</h2>
-    """.format(total_income), unsafe_allow_html=True)
-    st.success(f"TikTok geliri: ${tt_income:,.2f} USD")
+    if st.button("Hesapla"):
+        with st.spinner("Hesaplanıyor..."):
+            time.sleep(0.5)
+            reels_income = reels_views * 0.002
+            tt_income = tt_views * 0.015
+            total_income = reels_income + tt_income
+            st.markdown(f"<h2 style='text-align: center;'>💰 Tahmini Gelir: ${total_income:,.2f} USD</h2>", unsafe_allow_html=True)
+            st.success(f"TikTok geliri: ${tt_income:,.2f} USD")
 
 # --- Alt Bilgi ---
 st.info("💡 Hesaplamalar tahmini verilere dayalıdır. Gerçek gelirler anlaşmalara ve platformlara göre değişebilir.")
