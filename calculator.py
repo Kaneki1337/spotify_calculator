@@ -1,18 +1,49 @@
-# calculator.py
-
 import streamlit as st
+from dotenv import load_dotenv
+import os
 import requests
 import base64
 from urllib.parse import urlparse
-from dotenv import load_dotenv
-import os
 
-# --- .env dosyasını yükle ---
+# --- ENV ---
 load_dotenv()
 client_id = os.getenv("SPOTIFY_CLIENT_ID")
 client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
 
-# Spotify artist ID ayıklama
+# --- Sayfa Ayarı ---
+st.set_page_config(page_title="KXNEKIPASA Calculator", layout="wide")
+st.markdown("<h1 style='text-align: center;'>KXNEKIPASA CALCULATOR</h1>", unsafe_allow_html=True)
+
+# --- Menü Butonları ---
+col1, col2, col3, col4 = st.columns(4)
+selected = None
+
+with col1:
+    if st.button("PROFİL HESAPLAMA"):
+        selected = "profil"
+
+with col2:
+    if st.button("STREAM HESAPLAMA"):
+        selected = "stream"
+
+with col3:
+    if st.button("YOUTUBE HESAPLAMA"):
+        selected = "youtube"
+
+with col4:
+    if st.button("INSTAGRAM VE TIKTOK HESAPLAMA"):
+        selected = "sosyal"
+
+# --- Kazanç Oranları ---
+region_rates = {
+    "Amerika": 0.0035,
+    "Türkiye": 0.0010,
+    "Avrupa": 0.0025,
+    "Asya": 0.0015,
+    "Dünya Geneli": 0.0020
+}
+
+# --- Fonksiyonlar ---
 def extract_artist_id(spotify_url):
     try:
         path = urlparse(spotify_url).path
@@ -20,7 +51,6 @@ def extract_artist_id(spotify_url):
     except:
         return None
 
-# Spotify API token alma
 def get_spotify_token(client_id, client_secret):
     auth_str = f"{client_id}:{client_secret}"
     b64_auth = base64.b64encode(auth_str.encode()).decode()
@@ -34,66 +64,37 @@ def get_spotify_token(client_id, client_secret):
     }
 
     r = requests.post("https://accounts.spotify.com/api/token", headers=headers, data=data)
-    token = r.json().get("access_token")
-    return token
+    return r.json().get("access_token")
 
-# Spotify API'den sanatçı verisi alma
 def get_artist_data_from_api(artist_id, token):
     url = f"https://api.spotify.com/v1/artists/{artist_id}"
-    headers = {
-        "Authorization": f"Bearer {token}"
-    }
-    response = requests.get(url, headers=headers)
-    if response.status_code == 200:
-        return response.json()
-    return None
+    headers = {"Authorization": f"Bearer {token}"}
+    r = requests.get(url, headers=headers)
+    return r.json() if r.status_code == 200 else None
 
-# Spotify API'den sanatçının en popüler şarkılarının popularity skorlarını al
 def get_artist_top_tracks(artist_id, token):
     url = f"https://api.spotify.com/v1/artists/{artist_id}/top-tracks?market=US"
-    headers = {
-        "Authorization": f"Bearer {token}"
-    }
-    response = requests.get(url, headers=headers)
-    if response.status_code == 200:
-        return response.json().get("tracks", [])
-    return []
+    headers = {"Authorization": f"Bearer {token}"}
+    r = requests.get(url, headers=headers)
+    return r.json().get("tracks", []) if r.status_code == 200 else []
 
-# Popularity değerini yaklaşık stream sayısına çevir (iyileştirilmiş versiyon)
-def estimate_streams_from_popularity(popularity):
-    if popularity >= 90:
+def estimate_streams_from_popularity(pop):
+    if pop >= 90:
         return 50_000_000
-    elif popularity >= 80:
+    elif pop >= 80:
         return 10_000_000
-    elif popularity >= 70:
+    elif pop >= 70:
         return 5_000_000
-    elif popularity >= 60:
+    elif pop >= 60:
         return 1_000_000
-    elif popularity >= 50:
+    elif pop >= 50:
         return 500_000
     else:
         return 100_000
 
-# Ülkeye göre stream kazanç oranları
-region_rates = {
-    "Amerika": 0.0035,
-    "Türkiye": 0.0010,
-    "Avrupa": 0.0025,
-    "Asya": 0.0015,
-    "Dünya Geneli": 0.0020
-}
-
-# --- Streamlit UI ---
-st.set_page_config(page_title="Müzik Gelir Hesaplama", layout="centered")
-st.title("\U0001F3A7 Spotify & Sosyal Medya Gelir Hesaplayıcı")
-
-# Bilgilendirme
-st.info("💡 Hesaplamalar tahmini oranlara dayalıdır. Gerçek gelirler; platform, dağıtımcı ve anlaşmalara göre değişiklik gösterebilir.")
-
-# --- 1. Spotify Sanatçı Profili ile Otomatik Hesaplama ---
-st.header("1️⃣ Spotify Sanatçı Linki ile Otomatik Hesapla")
-
-with st.expander("🎵 Spotify sanatçı linkini girerek gelir hesapla"):
+# --- Seçilen Butona Göre İçerik ---
+if selected == "profil":
+    st.header("🎵 Spotify Sanatçı Linki ile Hesaplama")
     spotify_url = st.text_input("Spotify Sanatçı Linki", placeholder="https://open.spotify.com/artist/...")
     region = st.selectbox("Dinleyici kitlesi bölgesi", list(region_rates.keys()))
 
@@ -107,47 +108,39 @@ with st.expander("🎵 Spotify sanatçı linkini girerek gelir hesapla"):
 
                 if artist_data and top_tracks:
                     followers = artist_data.get("followers", {}).get("total", 0)
+                    total_streams = sum([estimate_streams_from_popularity(t.get("popularity", 0)) for t in top_tracks])
+                    income = total_streams * region_rates[region]
 
-                    estimated_total_streams = 0
-                    for track in top_tracks:
-                        popularity = track.get("popularity", 0)
-                        estimated_streams = estimate_streams_from_popularity(popularity)
-                        estimated_total_streams += estimated_streams
-
-                    income = estimated_total_streams * region_rates[region]
-                    st.success(f"Spotify takipçi sayısı: {followers:,}")
-                    st.success(f"En popüler 10 şarkıya göre tahmini toplam stream: {estimated_total_streams:,}")
-                    st.success(f"{region} için tahmini gelir: ${income:,.2f} USD")
+                    st.success(f"Takipçi: {followers:,}")
+                    st.success(f"Tahmini Toplam Dinlenme: {total_streams:,}")
+                    st.success(f"Tahmini Gelir: ${income:,.2f} USD")
                 else:
-                    st.error("Spotify verisi alınamadı. Artist ID veya token hatalı olabilir.")
+                    st.error("Veri alınamadı.")
         else:
             st.warning("Geçerli bir Spotify sanatçı linki girin.")
 
-# --- 2. Reels & TikTok Geliri ---
-st.header("2️⃣ Instagram Reels ve TikTok Şarkı Geliri")
-
-with st.expander("📱 Reels & TikTok görüntülenme ile gelir hesapla"):
-    reels_views = st.number_input("Instagram Reels Görüntülenme", min_value=0)
-    reels_income = reels_views * 0.002
-    st.success(f"Instagram Reels şarkı geliri: ${reels_income:,.2f} USD")
-
-    tt_views = st.number_input("TikTok Video Görüntülenme", min_value=0)
-    tt_income = tt_views * 0.015
-    st.success(f"TikTok şarkı geliri: ${tt_income:,.2f} USD")
-
-# --- 3. Manuel Spotify Dinlenme Hesabı ---
-st.header("3️⃣ Manuel Spotify Dinlenme ile Hesapla")
-
-with st.expander("📝 Manuel stream girerek hesapla"):
+elif selected == "stream":
+    st.header("📝 Manuel Spotify Dinlenme ile Hesapla")
     manual_streams = st.number_input("Toplam Dinlenme Sayısı", min_value=0)
     manual_region = st.selectbox("Bölge", list(region_rates.keys()), key="manual")
     manual_income = manual_streams * region_rates[manual_region]
     st.success(f"{manual_region} için tahmini gelir: ${manual_income:,.2f} USD")
 
-# --- 4. YouTube Topic Şarkı Geliri ---
-st.header("4️⃣ YouTube Topic Geliri")
-
-with st.expander("▶️ YouTube Topic görüntülenme ile gelir hesapla"):
+elif selected == "youtube":
+    st.header("▶️ YouTube Topic Görüntülenme ile Gelir")
     yt_views = st.number_input("YouTube Topic Görüntülenme", min_value=0)
     yt_income = yt_views * 0.00069
-    st.success(f"YouTube Topic şarkı geliri: ${yt_income:,.2f} USD")
+    st.success(f"YouTube Topic geliri: ${yt_income:,.2f} USD")
+
+elif selected == "sosyal":
+    st.header("📱 Reels ve TikTok Görüntülenme ile Gelir")
+    reels_views = st.number_input("Instagram Reels Görüntülenme", min_value=0)
+    reels_income = reels_views * 0.002
+    st.success(f"Instagram Reels geliri: ${reels_income:,.2f} USD")
+
+    tt_views = st.number_input("TikTok Görüntülenme", min_value=0)
+    tt_income = tt_views * 0.015
+    st.success(f"TikTok geliri: ${tt_income:,.2f} USD")
+
+# Bilgilendirme mesajı
+st.info("💡 Hesaplamalar tahmini verilere dayalıdır. Gerçek gelirler anlaşmalara ve platformlara göre değişebilir.")
