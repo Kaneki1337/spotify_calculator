@@ -130,12 +130,13 @@ if menu == "🎧 Hesaplama Sayfası":
                         st.markdown(f"<h2 style='text-align: center;'>💰 Tahmini Gelir: ${estimated_income:,.2f} USD</h2>", unsafe_allow_html=True)
                         st.markdown("---")
                         st.subheader("🎧 En Popüler Şarkılar")
-                        data = [{
-                            "Şarkı": t["name"],
-                            "Popülarite": t["popularity"],
-                            "Albüm": t["album"]["name"],
-                            "Süre (dk)": round(t["duration_ms"] / 60000, 2)
-                        } for t in sorted(top_tracks, key=lambda x: x['popularity'], reverse=True)]
+data = [{
+    "Şarkı": t["name"],
+    "Popülarite": t["popularity"],
+    "Albüm": t["album"]["name"],
+    "Süre (dk)": round(t["duration_ms"] / 60000, 2),
+    "Tahmini Stream": f"{t['popularity'] * 1000:,}".replace(",", ".")  # Türkçe formatlı
+} for t in sorted(top_tracks, key=lambda x: x['popularity'], reverse=True)]
                         df = pd.DataFrame(data)
                         st.dataframe(df, use_container_width=True)
 
