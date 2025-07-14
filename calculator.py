@@ -12,25 +12,7 @@ client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
 
 # --- Sayfa Ayarları ---
 st.set_page_config(page_title="KXNEKIPASA Calculator", layout="wide")
-
-# --- Saydam Arka Plan Resmi ---
-st.markdown("""
-    <style>
-    .stApp {
-        background: url('https://i.imgur.com/JxObNzk.jpg') no-repeat center center fixed;
-        background-size: cover;
-    }
-    h1 {
-        background-color: rgba(0, 0, 0, 0.4);
-        padding: 1rem;
-        border-radius: 10px;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-st.markdown("""
-    <h1 style='text-align: center; color:#b266ff;'>KXNEKIPASA CALCULATOR</h1>
-""", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center;'>KXNEKIPASA CALCULATOR</h1>", unsafe_allow_html=True)
 
 # --- Menü Seçimi (session_state ile)
 if "menu" not in st.session_state:
@@ -41,8 +23,8 @@ st.markdown("""
 <style>
 div.stButton > button {
     background-color: white;
-    color: #7e3ff2;
-    border: 2px solid #7e3ff2;
+    color: black;
+    border: 2px solid black;
     border-radius: 15px;
     padding: 0.75rem 1.5rem;
     font-weight: bold;
@@ -50,7 +32,7 @@ div.stButton > button {
     margin: 10px;
 }
 div.stButton > button:hover {
-    background-color: #7e3ff2;
+    background-color: black;
     color: white;
     transform: scale(1.05);
 }
@@ -139,15 +121,7 @@ def estimate_streams_from_popularity(pop):
 # --- Seçilen Menüye Göre İçerik ---
 if selected == "profil":
     st.header("🎵 Spotify Sanatçı Linki ile Hesaplama")
-
-    options = {
-        "KXNEKIPASA": "https://open.spotify.com/intl-tr/artist/0pZpo1DFnOHkcSQB2NT1GA?si=oyWBZfU2QxSCqKFqgtQL1A",
-        "Başka bir link gireceğim": ""
-    }
-
-    choice = st.selectbox("Sanatçı seçin veya özel link girin", options.keys())
-    spotify_url = st.text_input("Spotify Sanatçı Linki", value=options[choice])
-
+    spotify_url = st.text_input("Spotify Sanatçı Linki", placeholder="https://open.spotify.com/artist/...")
     region = st.selectbox("Dinleyici kitlesi bölgesi", list(region_rates.keys()))
 
     if st.button("Veriyi Çek ve Hesapla"):
