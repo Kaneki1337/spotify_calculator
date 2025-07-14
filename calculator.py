@@ -1,65 +1,87 @@
 # calculator.py
 
 import streamlit as st
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from bs4 import BeautifulSoup
+import time
 
-st.set_page_config(page_title="Spotify Calculator", layout="centered")
-st.title("🎧 Porno Seks Goruntule")
+# 🧠 Spotify scraping fonksiyonu
+def get_spotify_monthly_listeners(artist_url):
+    try:
+        chrome_options = Options()
+        chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--no-sandbox")
 
-st.markdown("Manuel giriş yaparak Spotify, YouTube Topic, Instagram ve TikTok için tahmini gelir hesaplayabilirsiniz.")
+        driver = webdriver.Chrome(options=chrome_options)
+        driver.get(artist_url)
+        time.sleep(5)
 
-st.header("1️⃣ Profil Bilgisi ile Hesaplama")
+        soup = BeautifulSoup(driver.page_source, 'html.parser')
+        text = soup.get_text()
 
-with st.expander("Sanatçı profili üzerinden tahmini gelir hesapla (manuel)"):
-    platform = st.selectbox("Platform Seçin", ["Spotify", "YouTube (Topic)", "Instagram", "TikTok"])
+        for line in text.split('\n'):
+            if 'monthly listeners' in line:
+                parts = line.strip().split(' ')
+                for i, part in enumerate(parts):
+                    if 'monthly' in part:
+                        try:
+                            listeners = parts[i-1].replace(',', '')
+                            listeners = int(float(listeners) * 1000) if 'K' in listeners else \
+                                        int(float(listeners) * 1_000_000) if 'M' in listeners else int(listeners)
+                            driver.quit()
+                            return listeners
+                        except:
+                            continue
+        driver.quit()
+    except Exception as e:
+        return None
+
+st.set_page_config(page_title="Müzik Gelir Hesaplayıcı", layout="centered")
+st.title("🎧 Spotify & Sosyal Medya Gelir Hesaplayıcı")
+
+st.header("1️⃣ Spotify Sanatçı Profil Linki ile Hesapla")
+
+with st.expander("🎵 Spotify profil linkini gir, gelir otomatik hesaplansın"):
+    spotify_link = st.text_input("Spotify Sanatçı Linki (örn: https://open.spotify.com/artist/...)")
+    avg_streams_per_listener = st.slider("Kişi başı ortalama dinleme", 1, 20, 5)
+    if st.button("🔍 Veriyi Çek ve Hesapla"):
+        if spotify_link:
+            listeners = get_spotify_monthly_listeners(spotify_link)
+            if listeners:
+                total_streams = listeners * avg_streams_per_listener
+                income = total_streams * 0.003  # Ortalama kazanç
+                st.success(f"Aylık dinleyici: **{listeners:,}**")
+                st.success(f"Tahmini toplam stream: **{total_streams:,}**")
+                st.success(f"Tahmini Spotify geliri: **${income:,.2f} USD**")
+            else:
+                st.error("Dinleyici sayısı çekilemedi. Linki kontrol et.")
+        else:
+            st.warning("Lütfen bir Spotify sanatçı linki girin.")
+
+# 🌍 Ülke kazanç oranları
+region_rates = {
+    "Amerika": 0.0035,
+    "Türkiye": 0.0010,
+    "Avrupa": 0.0025,
+    "Asya": 0.0015,
+    "Dünya Geneli": 0.0020
+}
+
+st.header("2️⃣ Manuel Dinlenme ile Hesapla")
+
+with st.expander("🎧 Dinlenme sayılarını manuel gir, ülkeye göre kazanç hesapla"):
+    platform = st.selectbox("Platform Seçin", ["Spotify", "YouTube (Topic)"], key="manual")
 
     if platform == "Spotify":
-        monthly_listeners = st.number_input("Aylık Dinleyici Sayısı", min_value=0)
-        avg_streams_per_listener = st.slider("Kişi başı ortalama dinleme", 1, 20, 5)
-        total_streams = monthly_listeners * avg_streams_per_listener
-        spotify_income = total_streams * 0.003  # 0.003 USD per stream
-        st.success(f"Tahmini Spotify gelir: **${spotify_income:,.2f} USD**")
+        streams = st.number_input("Toplam Dinlenme", min_value=0)
+        region = st.selectbox("Hedef Kitle Bölgesi", list(region_rates.keys()))
+        rate = region_rates[region]
+        income = streams * rate
+        st.success(f"{region} için tahmini Spotify geliri: **${income:,.2f} USD**")
 
     elif platform == "YouTube (Topic)":
-        subs = st.number_input("Abone Sayısı", min_value=0)
-        avg_views = st.number_input("Ortalama Video İzlenme", min_value=0)
-        topic_income = avg_views * 0.002
-        st.success(f"Tahmini YouTube Topic geliri: **${topic_income:,.2f} USD**")
-
-    elif platform == "Instagram":
-        followers = st.number_input("Takipçi Sayısı", min_value=0)
-        engagement = st.slider("Etkileşim Oranı (%)", 0.0, 20.0, 3.0)
-        insta_income = followers * (engagement / 100) * 0.02
-        st.success(f"Tahmini Instagram geliri: **${insta_income:,.2f} USD**")
-
-    elif platform == "TikTok":
-        followers = st.number_input("Takipçi Sayısı", min_value=0)
-        avg_views = st.number_input("Ortalama Video İzlenme", min_value=0)
-        tiktok_income = avg_views * 0.015
-        st.success(f"Tahmini TikTok geliri: **${tiktok_income:,.2f} USD**")
-
-st.header("2️⃣ Doğrudan Veri Girişi ile Hesaplama")
-
-with st.expander("Dinlenme / Görüntülenme sayısı girerek hesapla"):
-    platform2 = st.selectbox("Platform Seçin", ["Spotify", "YouTube (Topic)", "Instagram", "TikTok"], key="manual")
-
-    if platform2 == "Spotify":
-        streams = st.number_input("Toplam Dinlenme", min_value=0, key="spotify_streams")
-        income = streams * 0.003
-        st.success(f"Tahmini Spotify geliri: **${income:,.2f} USD**")
-
-    elif platform2 == "YouTube (Topic)":
-        views = st.number_input("Toplam Topic Video İzlenme", min_value=0, key="yt_views")
+        views = st.number_input("Toplam Topic Video İzlenme", min_value=0)
         income = views * 0.002
         st.success(f"Tahmini YouTube Topic geliri: **${income:,.2f} USD**")
-
-    elif platform2 == "Instagram":
-        followers = st.number_input("Takipçi Sayısı", min_value=0, key="ig_followers")
-        engagement = st.slider("Etkileşim Oranı (%)", min_value=0.0, max_value=20.0, value=3.0, key="ig_engage")
-        income = followers * (engagement / 100) * 0.02
-        st.success(f"Tahmini Instagram geliri: **${income:,.2f} USD**")
-
-    elif platform2 == "TikTok":
-        followers = st.number_input("Takipçi Sayısı", min_value=0, key="tt_followers")
-        avg_views = st.number_input("Ortalama Görüntülenme", min_value=0, key="tt_views")
-        income = avg_views * 0.015
-        st.success(f"Tahmini TikTok geliri: **${income:,.2f} USD**")
