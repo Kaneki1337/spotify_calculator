@@ -218,4 +218,3 @@ elif menu == "💻 Kod Çalıştır":
             st.code(output_text)
         else:
             st.info("Kod çalıştı ama çıktı üretmedi.")
-```)
