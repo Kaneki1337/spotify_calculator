@@ -18,7 +18,7 @@ load_dotenv()
 client_id = os.getenv("SPOTIFY_CLIENT_ID")
 client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
 
-# Sabit kur bilgileri
+# Sabit kur bilgileri (güncel değerler girilmeli)
 usd_to_try = 40.17
 eur_to_try = 43.20
 
@@ -55,47 +55,30 @@ def get_artist_top_tracks(artist_id, token):
     r = requests.get(url, headers=headers)
     return r.json().get("tracks", []) if r.status_code == 200 else []
 
-# Menü seçenekleri
-menu = st.sidebar.selectbox("📊 Ana Menü", ["🎧 Hesaplama Sayfası", "💻 Kod Çalıştır"])
+# Bölge bazlı stream başı gelir oranları (2025 güncel veriler)
+region_rates = {
+    "Amerika": 0.0040,
+    "Türkiye": 0.0010,
+    "Avrupa": 0.0039,
+    "Asya": 0.0012,
+    "Dünya Geneli": 0.00238
+}
 
-# -------------------------------
-# 🎧 Sayfa 1: Hesaplama Sayfası
-# -------------------------------
-if menu == "🎧 Hesaplama Sayfası":
+# Ek platform gelir oranları
+yt_rate = 0.00069
+reels_rate = 0.0002
+tt_rate = 0.0007  # TikTok Rewards baz alındı
+
+# Ana menü
+menu = st.sidebar.selectbox("📊 Ana Menü", ["🎿 Hesaplama Sayfası", "💻 Kod Çalıştır"])
+
+if menu == "🎿 Hesaplama Sayfası":
 
     if "menu" not in st.session_state:
         st.session_state.menu = "profil"
 
     st.markdown(f"<h1 style='text-align: center; color:#b266ff;'>Hoş geldin!</h1>", unsafe_allow_html=True)
     st.markdown("---")
-
-    region_rates = {
-        "Amerika": 0.0035,
-        "Türkiye": 0.0010,
-        "Avrupa": 0.0025,
-        "Asya": 0.0015,
-        "Dünya Geneli": 0.0020
-    }
-
-    st.markdown("""
-    <style>
-    div.stButton > button {
-        background-color: white;
-        color: #7e3ff2;
-        border: 2px solid #7e3ff2;
-        border-radius: 15px;
-        padding: 0.75rem 1.5rem;
-        font-weight: bold;
-        transition: 0.3s ease;
-        margin: 10px;
-    }
-    div.stButton > button:hover {
-        background-color: #7e3ff2;
-        color: white;
-        transform: scale(1.05);
-    }
-    </style>
-    """, unsafe_allow_html=True)
 
     col1, col2, col3, col4 = st.columns(4)
     with col1:
@@ -134,18 +117,17 @@ if menu == "🎧 Hesaplama Sayfası":
 
                     if artist_data and top_tracks:
                         total_popularity = sum([t.get("popularity", 0) for t in top_tracks])
-                        estimated_income = total_popularity * 1000 * region_rates[region]
-                        estimated_income_try = estimated_income * exchange_rate
                         total_estimated_streams = total_popularity * 1000
+                        estimated_income = total_estimated_streams * region_rates[region]
+                        estimated_income_try = estimated_income * exchange_rate
 
                         st.markdown(f"<h2 style='text-align: center;'>💰 Tahmini Gelir: {currency_symbol}{estimated_income:,.2f} ≈ ₺{estimated_income_try:,.2f} TL</h2>", unsafe_allow_html=True)
                         st.markdown("---")
 
-                        st.subheader("🎧 En Popüler Şarkılar")
-
+                        st.subheader("🎷 En Popüler Şarkılar")
                         st.markdown("""
                         <div style='padding: 1rem; background-color: #828023; border-left: 5px solid #7e3ff2;'>
-                            <strong>ℹ️ Bilgi:</strong> Her <strong>1 popülarite puanı ≈ 1000 stream</strong> olarak varsayılmıştır.
+                            <strong>ℹ️ Bilgi:</strong> Her <strong>1 popülerlik puanı ≈ 1000 stream</strong> olarak varsayılmıştır.
                         </div>
                         """, unsafe_allow_html=True)
 
@@ -153,7 +135,7 @@ if menu == "🎧 Hesaplama Sayfası":
 
                         data = [{
                             "Şarkı": t["name"],
-                            "Popülarite": t["popularity"],
+                            "Popülerlik": t["popularity"],
                             "Albüm": t["album"]["name"],
                             "Süre (dk)": round(t["duration_ms"] / 60000, 2),
                             "Tahmini Stream": f"{t['popularity'] * 1000:,}".replace(",", ".")
@@ -169,7 +151,7 @@ if menu == "🎧 Hesaplama Sayfası":
     elif selected == "stream":
         st.header("📝 Manuel Spotify Dinlenme ile Hesapla")
 
-        raw_input = st.text_input("Toplam Dinlenme Sayısı (örn: 100.000)", value="")
+        raw_input = st.text_input("Toplam Dinlenme Sayısı (\u00f6rn: 100.000)", value="")
         manual_streams = 0
         valid_input = False
 
@@ -179,7 +161,7 @@ if menu == "🎧 Hesaplama Sayfası":
                 valid_input = True
                 st.markdown(f"**Girdiğiniz sayı:** `{manual_streams:,}`".replace(",", "."))
             except ValueError:
-                st.warning("Lütfen sadece sayı girin (örn: 100.000)")
+                st.warning("Lütfen sadece sayı girin (\u00f6rn: 100.000)")
 
         manual_region = st.selectbox("Bölge", list(region_rates.keys()), key="manual")
 
@@ -192,7 +174,7 @@ if menu == "🎧 Hesaplama Sayfası":
         st.header("▶️ YouTube Topic Görüntülenme ile Gelir")
         yt_views = st.number_input("YouTube Görüntülenme", min_value=0)
         if st.button("Hesapla"):
-            yt_income = yt_views * 0.00069
+            yt_income = yt_views * yt_rate
             yt_income_try = yt_income * exchange_rate
             st.success(f"YouTube Topic geliri: {currency_symbol}{yt_income:,.2f} ≈ ₺{yt_income_try:,.2f} TL")
 
@@ -201,13 +183,12 @@ if menu == "🎧 Hesaplama Sayfası":
         reels_views = st.number_input("Instagram Reels Görüntülenme", min_value=0)
         tt_views = st.number_input("TikTok Görüntülenme", min_value=0)
         if st.button("Hesapla"):
-            reels_income = reels_views * 0.002
-            tt_income = tt_views * 0.015
+            reels_income = reels_views * reels_rate
+            tt_income = tt_views * tt_rate
             total_income = reels_income + tt_income
             total_income_try = total_income * exchange_rate
             st.success(f"Toplam gelir: {currency_symbol}{total_income:,.2f} ≈ ₺{total_income_try:,.2f} TL")
 
-# 💻 Kod çalıştırma bölümü (değişmeden bırakıldı)
 elif menu == "💻 Kod Çalıştır":
     st.title("💻 Python Kodu Çalıştır")
     st.markdown("Python kodunu aşağıya yaz ve çalıştır butonuna bas.")
@@ -225,11 +206,15 @@ elif menu == "💻 Kod Çalıştır":
                     output_text = buf.getvalue()
                     error_text = err_buf.getvalue()
             if error_text:
-                st.error(f"Hata:\n```\n{error_text}\n```")
+                st.error(f"Hata:\n```
+{error_text}
+```")
             elif output_text:
                 st.success("Kod çalıştırıldı:")
                 st.code(output_text)
             else:
                 st.info("Kod çalıştı ama çıktı üretmedi.")
         except Exception as e:
-            st.error(f"Beklenmeyen Hata:\n```\n{e}\n```")
+            st.error(f"Beklenmeyen Hata:\n```
+{e}
+```)
