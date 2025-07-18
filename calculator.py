@@ -206,8 +206,7 @@ elif menu == "💻 Kod Çalıştır":
                     output_text = buf.getvalue()
                     error_text = err_buf.getvalue()
             if error_text:
-                st.error(f"Hata:\n```\n{error_text}\n```")
-```")
+                st.error(f"Hata:\n```\n{error_text}\n```")```")
             elif output_text:
                 st.success("Kod çalıştırıldı:")
                 st.code(output_text)
