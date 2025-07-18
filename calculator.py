@@ -193,26 +193,29 @@ elif menu == "💻 Kod Çalıştır":
     st.title("💻 Python Kodu Çalıştır")
     st.markdown("Python kodunu aşağıya yaz ve çalıştır butonuna bas.")
     code_input = st.text_area("Kodunuzu girin:", height=200)
+    
     if st.button("Çalıştır"):
-        output = io.StringIO()
+        output_buf = io.StringIO()
+        error_buf = io.StringIO()
         try:
             with st.spinner("Çalıştırılıyor..."):
-                with io.StringIO() as buf, io.StringIO() as err_buf:
-                    sys.stdout = buf
-                    sys.stderr = err_buf
-                    exec(code_input, {})
-                    sys.stdout = sys.__stdout__
-                    sys.stderr = sys.__stderr__
-                    output_text = buf.getvalue()
-                    error_text = err_buf.getvalue()
-            if error_text:
-                st.error(f"Hata:\n```\n{error_text}\n```")```")
-            elif output_text:
-                st.success("Kod çalıştırıldı:")
-                st.code(output_text)
-            else:
-                st.info("Kod çalıştı ama çıktı üretmedi.")
+                sys.stdout = output_buf
+                sys.stderr = error_buf
+                exec(code_input, {})
         except Exception as e:
-            st.error(f"Beklenmeyen Hata:\n```
-{e}
+            error_buf.write(str(e))
+        finally:
+            sys.stdout = sys.__stdout__
+            sys.stderr = sys.__stderr__
+
+        output_text = output_buf.getvalue()
+        error_text = error_buf.getvalue()
+
+        if error_text:
+            st.error(f"Hata:\n```\n{error_text}\n```")
+        elif output_text:
+            st.success("Kod çalıştırıldı:")
+            st.code(output_text)
+        else:
+            st.info("Kod çalıştı ama çıktı üretmedi.")
 ```)
