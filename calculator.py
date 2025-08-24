@@ -5,8 +5,8 @@ import pandas as pd
 st.set_page_config(page_title="Gelir Hesaplayıcı", layout="wide")
 
 # --- Kurlar ---
-usd_to_try = 40.17
-eur_to_try = 43.20
+usd_to_try = 40.97
+eur_to_try = 47.20
 gbp_to_try = 51.00  # örnek değer, gerekirse güncelle
 
 # Döviz seçimi
@@ -167,9 +167,9 @@ yt_total = st.session_state.get("yt_total_usd", 0.0)
 social_total = st.session_state.get("social_total_usd", 0.0)
 grand_total = spotify_total + yt_total + social_total
 
-col_a.metric("Spotify Toplam", f"{currency_symbol}{spotify_total:,.2f}")
-col_b.metric("YouTube Toplam", f"{currency_symbol}{yt_total:,.2f}")
-col_c.metric("Sosyal Toplam", f"{currency_symbol}{social_total:,.2f}")
-col_d.metric("GENEL TOPLAM", f"{currency_symbol}{grand_total:,.2f}", help="Spotify + YouTube + Instagram Reels + TikTok")
+col_a.metric("Spotify Toplam (₺)", f"₺{spotify_total*exchange_rate:,.2f}")
+col_b.metric("YouTube Toplam (₺)", f"₺{yt_total*exchange_rate:,.2f}")
+col_c.metric("Sosyal Toplam (₺)", f"₺{social_total*exchange_rate:,.2f}")
+col_d.metric("GENEL TOPLAM (₺)", f"₺{grand_total*exchange_rate:,.2f}", help="Spotify + YouTube + Instagram Reels + TikTok")
 
-st.caption("Hesaplamalar seçili döviz cinsine göre gösterilir ve yaklaşık değerlerdir.")
+st.caption("Hesaplamalar TL cinsinden gösterilir ve yaklaşık değerlerdir.")
