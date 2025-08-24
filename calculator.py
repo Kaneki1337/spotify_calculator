@@ -71,7 +71,7 @@ if st.button("Spotify Gelirini Hesapla"):
             # Özet
             total_usd = sum([streams * region_rates[r] for r in selected_regions])
             total_try = total_usd * exchange_rate
-            st.success(f"Toplam Gelir: {currency_symbol}{total_usd:,.2f} ≈ ₺{total_try:,.2f}")
+            st.success(f"Toplam Spotify Geliri: {currency_symbol}{total_usd:,.2f} ≈ ₺{total_try:,.2f}")
 
             # Excel indir
             buffer = io.BytesIO()
@@ -81,3 +81,42 @@ if st.button("Spotify Gelirini Hesapla"):
 
     except ValueError:
         st.error("Lütfen geçerli bir sayı girin.")
+
+st.markdown("---")
+
+# ▶️ YouTube Hesaplama
+st.subheader("▶️ YouTube Hesaplama")
+yt_views = st.number_input("YouTube Görüntülenme", min_value=0, value=0)
+if st.button("YouTube Gelirini Hesapla"):
+    yt_income = yt_views * yt_rate
+    yt_income_try = yt_income * exchange_rate
+    col1, col2 = st.columns(2)
+    col1.metric("YouTube Geliri", f"{currency_symbol}{yt_income:,.2f}")
+    col2.metric("TL Karşılığı", f"₺{yt_income_try:,.2f}")
+
+st.markdown("---")
+
+# 📱 Sosyal Medya Hesaplama
+st.subheader("📱 Instagram & TikTok Hesaplama")
+col1, col2 = st.columns(2)
+reels_views = col1.number_input("Instagram Reels Görüntülenme", min_value=0, value=0)
+tt_views = col2.number_input("TikTok Görüntülenme", min_value=0, value=0)
+
+if st.button("Sosyal Medya Gelirini Hesapla"):
+    reels_income = reels_views * reels_rate
+    tt_income = tt_views * tt_rate
+    total_income = reels_income + tt_income
+    total_income_try = total_income * exchange_rate
+    col1.metric("Sosyal Medya Geliri", f"{currency_symbol}{total_income:,.2f}")
+    col2.metric("TL Karşılığı", f"₺{total_income_try:,.2f}")
+
+st.markdown("---")
+
+# 📊 Genel Özet (sabit oran tablosu)
+st.subheader("📊 Gelir Oranları Özeti")
+summary_data = {
+    "Platform": ["Spotify (Ortalama)", "YouTube", "Instagram Reels", "TikTok"],
+    "Oran ($)": [0.00238, yt_rate, reels_rate, tt_rate]
+}
+summary_df = pd.DataFrame(summary_data)
+st.dataframe(summary_df, use_container_width=True)
