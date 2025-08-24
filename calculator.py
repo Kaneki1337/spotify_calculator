@@ -118,5 +118,9 @@ summary_data = {
     "Platform": ["Spotify (Ortalama)", "YouTube", "Instagram Reels", "TikTok"],
     "Oran ($)": [0.00238, yt_rate, reels_rate, tt_rate]
 }
+
+csv_data = df.to_csv(index=False).encode("utf-8")
+st.download_button("📥 Spotify CSV indir", data=csv_data, file_name="spotify_geliri.csv", mime="text/csv")
+
 summary_df = pd.DataFrame(summary_data)
 st.dataframe(summary_df, use_container_width=True)
