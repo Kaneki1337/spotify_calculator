@@ -13,14 +13,26 @@ currency_option = st.sidebar.selectbox("💱 Döviz Cinsi", ["USD", "EUR"])
 exchange_rate = usd_to_try if currency_option == "USD" else eur_to_try
 currency_symbol = "$" if currency_option == "USD" else "€"
 
-# Gelir oranları
+# Gelir oranları (örnek oranlarla tüm ülkeler)
 region_rates = {
-    "Amerika": 0.0040,
+    "ABD": 0.0040,
     "Türkiye": 0.0010,
-    "Avrupa": 0.0039,
-    "Asya": 0.0012,
+    "Almanya": 0.0039,
+    "Fransa": 0.0038,
+    "İngiltere": 0.0041,
+    "Kanada": 0.0037,
+    "Avustralya": 0.0036,
+    "İspanya": 0.0035,
+    "İtalya": 0.0034,
+    "Hindistan": 0.0012,
+    "Çin": 0.0011,
+    "Japonya": 0.0030,
+    "Brezilya": 0.0020,
+    "Rusya": 0.0015,
+    "Meksika": 0.0022,
     "Dünya Geneli": 0.00238
 }
+
 yt_rate = 0.00069
 reels_rate = 0.0002
 tt_rate = 0.0007
@@ -41,7 +53,7 @@ with col2:
     selected_regions = st.multiselect(
         "Dinleyici Bölgeleri",
         list(region_rates.keys()),
-        default=["Amerika", "Türkiye"]
+        default=["ABD", "Türkiye"]
     )
 
 df = None
