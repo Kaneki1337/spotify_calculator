@@ -6,8 +6,8 @@ import io
 st.set_page_config(page_title="Gelir Hesaplayıcı", layout="wide")
 
 # Sabit kur bilgileri
-usd_to_try = 40.17
-eur_to_try = 43.20
+usd_to_try = 40.97
+eur_to_try = 47.56
 
 # Döviz seçimi
 currency_option = st.sidebar.selectbox("💱 Döviz Cinsi", ["USD", "EUR"])
@@ -45,6 +45,8 @@ with col2:
         default=["Amerika", "Türkiye"]
     )
 
+df = None
+
 if st.button("Spotify Gelirini Hesapla"):
     try:
         streams = int(raw_input.replace(".", "").replace(",", ""))
@@ -73,9 +75,9 @@ if st.button("Spotify Gelirini Hesapla"):
             total_try = total_usd * exchange_rate
             st.success(f"Toplam Spotify Geliri: {currency_symbol}{total_usd:,.2f} ≈ ₺{total_try:,.2f}")
 
-            # Excel indir (openpyxl kullanıyor)
+            # Excel indir (xlsxwriter ile)
             buffer = io.BytesIO()
-            with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+            with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
                 df.to_excel(writer, sheet_name="Spotify", index=False)
             st.download_button("📥 Spotify Excel indir", data=buffer.getvalue(), file_name="spotify_geliri.xlsx")
 
@@ -119,8 +121,9 @@ summary_data = {
     "Oran ($)": [0.00238, yt_rate, reels_rate, tt_rate]
 }
 
-csv_data = df.to_csv(index=False).encode("utf-8")
-st.download_button("📥 Spotify CSV indir", data=csv_data, file_name="spotify_geliri.csv", mime="text/csv")
+if df is not None:
+    csv_data = df.to_csv(index=False).encode("utf-8")
+    st.download_button("📥 Spotify CSV indir", data=csv_data, file_name="spotify_geliri.csv", mime="text/csv")
 
 summary_df = pd.DataFrame(summary_data)
 st.dataframe(summary_df, use_container_width=True)
