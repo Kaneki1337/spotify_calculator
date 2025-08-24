@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import io
 
 # Sayfa ayarı
 st.set_page_config(page_title="Gelir Hesaplayıcı", layout="wide")
@@ -74,12 +73,6 @@ if st.button("Spotify Gelirini Hesapla"):
             total_usd = sum([streams * region_rates[r] for r in selected_regions])
             total_try = total_usd * exchange_rate
             st.success(f"Toplam Spotify Geliri: {currency_symbol}{total_usd:,.2f} ≈ ₺{total_try:,.2f}")
-
-            # Excel indir (fallback: default engine)
-            buffer = io.BytesIO()
-            with pd.ExcelWriter(buffer) as writer:
-                df.to_excel(writer, sheet_name="Spotify", index=False)
-            st.download_button("📥 Spotify Excel indir", data=buffer.getvalue(), file_name="spotify_geliri.xlsx")
 
     except ValueError:
         st.error("Lütfen geçerli bir sayı girin.")
