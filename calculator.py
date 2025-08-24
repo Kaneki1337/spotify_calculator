@@ -6,8 +6,8 @@ import io
 st.set_page_config(page_title="Gelir Hesaplayıcı", layout="wide")
 
 # Sabit kur bilgileri
-usd_to_try = 40.97
-eur_to_try = 47.56
+usd_to_try = 40.17
+eur_to_try = 43.20
 
 # Döviz seçimi
 currency_option = st.sidebar.selectbox("💱 Döviz Cinsi", ["USD", "EUR"])
@@ -75,9 +75,9 @@ if st.button("Spotify Gelirini Hesapla"):
             total_try = total_usd * exchange_rate
             st.success(f"Toplam Spotify Geliri: {currency_symbol}{total_usd:,.2f} ≈ ₺{total_try:,.2f}")
 
-            # Excel indir (xlsxwriter ile)
+            # Excel indir (fallback: default engine)
             buffer = io.BytesIO()
-            with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
+            with pd.ExcelWriter(buffer) as writer:
                 df.to_excel(writer, sheet_name="Spotify", index=False)
             st.download_button("📥 Spotify Excel indir", data=buffer.getvalue(), file_name="spotify_geliri.xlsx")
 
