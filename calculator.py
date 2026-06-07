@@ -39,7 +39,7 @@ region_rates = {
     "Rusya": 0.0015,
     "Meksika": 0.0022,
     "Dünya Geneli": 0.00238
-    "İsvicre": 0,003
+    "İsvicre": 0.003
 }
 
 # Platform oranları (ortalama)
