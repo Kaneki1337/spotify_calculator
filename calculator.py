@@ -1,303 +1,164 @@
 import streamlit as st
 import pandas as pd
 
-# Sayfa ayarı
-st.set_page_config(page_title="Gelir Hesaplayıcı", layout="wide")
+# --------------------
+# PAGE CONFIG
+# --------------------
+st.set_page_config(
+    page_title="Gelir Dashboard",
+    layout="wide",
+    page_icon="💰"
+)
 
-# --- Kurlar ---
-usd_to_try = 46.06
-eur_to_try = 53.43
-gbp_to_try = 51.00
+# --------------------
+# STYLE (basit modern görünüm)
+# --------------------
+st.markdown("""
+<style>
+.main-title {
+    text-align:center;
+    font-size:42px;
+    font-weight:700;
+    color:#7e3ff2;
+    margin-bottom:10px;
+}
+.card {
+    background-color:#111827;
+    padding:20px;
+    border-radius:15px;
+    margin-bottom:15px;
+}
+</style>
+""", unsafe_allow_html=True)
 
-# Döviz seçimi
-currency_option = st.sidebar.selectbox("💱 Döviz Cinsi", ["USD", "EUR", "GBP"])
+st.markdown('<div class="main-title">💰 Gelir Dashboard Pro</div>', unsafe_allow_html=True)
 
-if currency_option == "USD":
-    exchange_rate = usd_to_try
-    currency_symbol = "$"
-elif currency_option == "EUR":
-    exchange_rate = eur_to_try
-    currency_symbol = "€"
-else:
-    exchange_rate = gbp_to_try
-    currency_symbol = "£"
-
-# --- Gelir oranları ---
-region_rates = {
-    "ABD": 0.0040,
-    "Türkiye": 0.0010,
-    "Almanya": 0.0039,
-    "Fransa": 0.0038,
-    "İngiltere": 0.0041,
-    "Kanada": 0.0037,
-    "Avustralya": 0.0036,
-    "İspanya": 0.0035,
-    "İtalya": 0.0034,
-    "Hindistan": 0.0012,
-    "Çin": 0.0011,
-    "Japonya": 0.0030,
-    "Brezilya": 0.0020,
-    "Rusya": 0.0015,
-    "Meksika": 0.0022,
-    "Dünya Geneli": 0.00238,
-    "İsviçre": 0.0030
+# --------------------
+# EXCHANGE RATES
+# --------------------
+exchange_rates = {
+    "USD": 46.06,
+    "EUR": 53.43,
+    "GBP": 51.00
 }
 
-# Platform oranları
+currency = st.sidebar.selectbox("💱 Para Birimi", list(exchange_rates.keys()))
+exchange_rate = exchange_rates[currency]
+symbol = {"USD": "$", "EUR": "€", "GBP": "£"}[currency]
+
+# --------------------
+# PLATFORM RATES
+# --------------------
+region_rates = {
+    "ABD": 0.0040, "Türkiye": 0.0010, "Almanya": 0.0039,
+    "Fransa": 0.0038, "İngiltere": 0.0041, "Kanada": 0.0037,
+    "Avustralya": 0.0036, "İspanya": 0.0035, "İtalya": 0.0034,
+    "Hindistan": 0.0012, "Çin": 0.0011, "Japonya": 0.0030,
+    "Brezilya": 0.0020, "Rusya": 0.0015, "Meksika": 0.0022,
+    "Dünya Geneli": 0.00238, "İsviçre": 0.0030
+}
+
 yt_rate = 0.00069
 reels_rate = 0.0002
 tt_rate = 0.0007
 
-# Başlık
-st.markdown(
-    "<h1 style='text-align:center; color:#7e3ff2;'>🎵 Çoklu Platform Gelir Hesaplayıcı</h1>",
-    unsafe_allow_html=True
-)
+# --------------------
+# SESSION STATE
+# --------------------
+for k in ["spotify", "yt", "social"]:
+    st.session_state.setdefault(k, 0.0)
 
-st.caption("*Not: Oranlar tahmini değerlerdir.*")
-st.markdown("---")
-
-# Session State
-for key in ["spotify_total_usd", "yt_total_usd", "social_total_usd"]:
-    if key not in st.session_state:
-        st.session_state[key] = 0.0
-
-# ---------------------------------------------------
+# =========================
 # SPOTIFY
-# ---------------------------------------------------
+# =========================
+st.markdown("## 🎧 Spotify")
 
-st.subheader("🎧 Spotify Hesaplama")
-
-col1, col2 = st.columns(2)
-
-with col1:
-    raw_input = st.text_input(
-        "Toplam Spotify Dinlenme Sayısı",
-        value=""
-    )
-
-with col2:
-    selected_regions = st.multiselect(
-        "Dinleyici Bölgeleri",
-        list(region_rates.keys()),
-        default=["ABD", "Türkiye"]
-    )
-
-use_custom = st.checkbox(
-    "Seçili ülkelerde özel oran kullan",
-    value=False
-)
-
-custom_rates = {}
-
-if use_custom and selected_regions:
-    for r in selected_regions:
-        custom_rates[r] = st.number_input(
-            f"{r} oranı ($/stream)",
-            min_value=0.0,
-            value=float(region_rates[r]),
-            step=0.0001,
-            format="%.5f"
-        )
-
-if st.button("Spotify Gelirini Hesapla"):
-
-    try:
-        streams = int(raw_input.replace(".", "").replace(",", ""))
-
-        if streams <= 0:
-            st.warning("Pozitif bir stream sayısı giriniz.")
-
-        elif not selected_regions:
-            st.warning("En az bir bölge seçiniz.")
-
-        else:
-
-            streams_per_region = streams / len(selected_regions)
-
-            rows = []
-
-            for region in selected_regions:
-
-                rate = (
-                    custom_rates.get(region, region_rates[region])
-                    if use_custom
-                    else region_rates[region]
-                )
-
-                income_usd = streams_per_region * rate
-                income_try = income_usd * exchange_rate
-
-                rows.append({
-                    "Bölge": region,
-                    "Stream": int(streams_per_region),
-                    "Oran ($)": rate,
-                    "Gelir_USD": income_usd,
-                    "Gelir_TL": income_try
-                })
-
-            spotify_df = pd.DataFrame(rows)
-
-            display_df = spotify_df.copy()
-
-            display_df["Stream"] = display_df["Stream"].map(
-                lambda x: f"{x:,}".replace(",", ".")
-            )
-
-            display_df["Oran ($)"] = display_df["Oran ($)"].map(
-                lambda x: f"{x:.5f}"
-            )
-
-            display_df["Gelir ($)"] = spotify_df["Gelir_USD"].map(
-                lambda x: f"{x:,.2f}"
-            )
-
-            display_df["Gelir (₺)"] = spotify_df["Gelir_TL"].map(
-                lambda x: f"{x:,.2f}"
-            )
-
-            display_df = display_df[
-                ["Bölge", "Stream", "Oran ($)", "Gelir ($)", "Gelir (₺)"]
-            ]
-
-            st.dataframe(display_df, use_container_width=True)
-
-            total_usd = spotify_df["Gelir_USD"].sum()
-            total_try = total_usd * exchange_rate
-
-            st.session_state["spotify_total_usd"] = float(total_usd)
-
-            st.success(
-                f"Toplam Spotify Geliri: "
-                f"{currency_symbol}{total_usd:,.2f} ≈ ₺{total_try:,.2f}"
-            )
-
-            chart_df = spotify_df.set_index("Bölge")["Gelir_USD"]
-            st.bar_chart(chart_df)
-
-            csv_data = display_df.to_csv(index=False).encode("utf-8")
-
-            st.download_button(
-                "📥 Spotify CSV indir",
-                data=csv_data,
-                file_name="spotify_geliri.csv",
-                mime="text/csv"
-            )
-
-    except ValueError:
-        st.error("Geçerli bir sayı giriniz.")
-
-st.markdown("---")
-
-# ---------------------------------------------------
-# YOUTUBE
-# ---------------------------------------------------
-
-st.subheader("▶️ YouTube Hesaplama")
-
-yt_views = st.number_input(
-    "YouTube Görüntülenme",
-    min_value=0,
-    value=0
-)
-
-if st.button("YouTube Gelirini Hesapla"):
-
-    yt_income = yt_views * yt_rate
-    yt_income_try = yt_income * exchange_rate
-
-    st.session_state["yt_total_usd"] = float(yt_income)
-
+with st.container():
     col1, col2 = st.columns(2)
 
-    col1.metric(
-        "YouTube Geliri",
-        f"{currency_symbol}{yt_income:,.2f}"
-    )
+    with col1:
+        streams = st.number_input("Toplam Stream", min_value=0, step=1000)
 
-    col2.metric(
-        "TL Karşılığı",
-        f"₺{yt_income_try:,.2f}"
-    )
+    with col2:
+        regions = st.multiselect("Bölgeler", list(region_rates.keys()), default=["ABD", "Türkiye"])
+
+use_custom = st.checkbox("Özel oran kullan")
+
+custom = {}
+if use_custom:
+    for r in regions:
+        custom[r] = st.slider(f"{r} oranı", 0.0001, 0.01, region_rates[r])
+
+if st.button("Spotify Hesapla") and streams > 0 and regions:
+
+    per_region = streams / len(regions)
+
+    data = []
+    total = 0
+
+    for r in regions:
+        rate = custom.get(r, region_rates[r]) if use_custom else region_rates[r]
+
+        income = per_region * rate
+        total += income
+
+        data.append([r, per_region, rate, income])
+
+    df = pd.DataFrame(data, columns=["Bölge", "Stream", "Oran", "Gelir USD"])
+
+    df["Gelir TL"] = df["Gelir USD"] * exchange_rate
+
+    st.session_state.spotify = total
+
+    st.dataframe(df, use_container_width=True)
+    st.bar_chart(df.set_index("Bölge")["Gelir USD"])
+
+    st.success(f"Spotify Gelir: {symbol}{total:,.2f}")
+
+# =========================
+# YOUTUBE
+# =========================
+st.markdown("## ▶️ YouTube")
+
+yt_views = st.number_input("Görüntülenme", min_value=0)
+
+if st.button("YouTube Hesapla"):
+    income = yt_views * yt_rate
+    st.session_state.yt = income
+
+    col1, col2 = st.columns(2)
+    col1.metric("YouTube", f"{symbol}{income:,.2f}")
+    col2.metric("TL", f"₺{income * exchange_rate:,.2f}")
+
+# =========================
+# SOCIAL
+# =========================
+st.markdown("## 📱 Sosyal Medya")
+
+c1, c2 = st.columns(2)
+
+reels = c1.number_input("Reels Views", min_value=0)
+tt = c2.number_input("TikTok Views", min_value=0)
+
+if st.button("Sosyal Hesapla"):
+    income = reels * reels_rate + tt * tt_rate
+    st.session_state.social = income
+
+    st.metric("Toplam", f"{symbol}{income:,.2f}")
+
+# =========================
+# DASHBOARD
+# =========================
+st.markdown("## 📊 Özet")
+
+total = st.session_state.spotify + st.session_state.yt + st.session_state.social
+
+col1, col2, col3 = st.columns(3)
+
+col1.metric("Spotify", f"₺{st.session_state.spotify * exchange_rate:,.2f}")
+col2.metric("YouTube", f"₺{st.session_state.yt * exchange_rate:,.2f}")
+col3.metric("Sosyal", f"₺{st.session_state.social * exchange_rate:,.2f}")
 
 st.markdown("---")
 
-# ---------------------------------------------------
-# INSTAGRAM + TIKTOK
-# ---------------------------------------------------
-
-st.subheader("📱 Instagram & TikTok Hesaplama")
-
-col1, col2 = st.columns(2)
-
-reels_views = col1.number_input(
-    "Instagram Reels Görüntülenme",
-    min_value=0,
-    value=0
-)
-
-tt_views = col2.number_input(
-    "TikTok Görüntülenme",
-    min_value=0,
-    value=0
-)
-
-if st.button("Sosyal Medya Gelirini Hesapla"):
-
-    reels_income = reels_views * reels_rate
-    tt_income = tt_views * tt_rate
-
-    total_income = reels_income + tt_income
-    total_income_try = total_income * exchange_rate
-
-    st.session_state["social_total_usd"] = float(total_income)
-
-    col1.metric(
-        "Sosyal Medya Geliri",
-        f"{currency_symbol}{total_income:,.2f}"
-    )
-
-    col2.metric(
-        "TL Karşılığı",
-        f"₺{total_income_try:,.2f}"
-    )
-
-st.markdown("---")
-
-# ---------------------------------------------------
-# GENEL TOPLAM
-# ---------------------------------------------------
-
-st.subheader("📊 Genel Özet")
-
-spotify_total = st.session_state["spotify_total_usd"]
-yt_total = st.session_state["yt_total_usd"]
-social_total = st.session_state["social_total_usd"]
-
-grand_total = spotify_total + yt_total + social_total
-
-col1, col2, col3, col4 = st.columns(4)
-
-col1.metric(
-    "Spotify Toplam (₺)",
-    f"₺{spotify_total * exchange_rate:,.2f}"
-)
-
-col2.metric(
-    "YouTube Toplam (₺)",
-    f"₺{yt_total * exchange_rate:,.2f}"
-)
-
-col3.metric(
-    "Sosyal Toplam (₺)",
-    f"₺{social_total * exchange_rate:,.2f}"
-)
-
-col4.metric(
-    "GENEL TOPLAM (₺)",
-    f"₺{grand_total * exchange_rate:,.2f}"
-)
-
-st.caption(
-    "Spotify + YouTube + Instagram Reels + TikTok gelirlerinin yaklaşık toplamı."
-)
+st.metric("GENEL TOPLAM", f"₺{total * exchange_rate:,.2f}")
