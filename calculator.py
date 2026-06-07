@@ -5,8 +5,8 @@ import pandas as pd
 st.set_page_config(page_title="Gelir Hesaplayıcı", layout="wide")
 
 # --- Kurlar ---
-usd_to_try = 46,06
-eur_to_try = 53,43
+usd_to_try = 46,06,
+eur_to_try = 53,43,
 gbp_to_try = 51.00  # örnek değer, gerekirse güncelle
 
 # Döviz seçimi
