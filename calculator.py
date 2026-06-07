@@ -5,8 +5,8 @@ import pandas as pd
 st.set_page_config(page_title="Gelir Hesaplayıcı", layout="wide")
 
 # --- Kurlar ---
-usd_to_try = 40.97
-eur_to_try = 47.20
+usd_to_try = 46,06
+eur_to_try = 53,43
 gbp_to_try = 51.00  # örnek değer, gerekirse güncelle
 
 # Döviz seçimi
@@ -38,7 +38,7 @@ region_rates = {
     "Brezilya": 0.0020,
     "Rusya": 0.0015,
     "Meksika": 0.0022,
-    "Dünya Geneli": 0.00238
+    "Dünya Geneli": 0.00238,
     "İsvicre": 0.003
 }
 
