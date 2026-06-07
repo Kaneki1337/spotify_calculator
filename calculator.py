@@ -2,51 +2,39 @@ import streamlit as st
 import pandas as pd
 
 # =====================
-# PAGE CONFIG
+# PAGE
 # =====================
-st.set_page_config(page_title="Pro Gelir Dashboard", layout="wide")
+st.set_page_config(page_title="Gelir Dashboard", layout="wide")
 
-st.title("💰 Pro Gelir Dashboard")
+st.title("💰 Gelir Dashboard")
 
 # =====================
-# EXCHANGE RATE
+# RATE
 # =====================
 exchange_rate = 46.06
 symbol = "$"
 
-# =====================
-# REGION DATA
-# =====================
 region_rates = {
     "ABD": 0.0040,
     "Türkiye": 0.0010,
-    "Almanya": 0.0039,
-    "Fransa": 0.0038,
-    "İngiltere": 0.0041,
-    "Kanada": 0.0037,
-    "Avustralya": 0.0036,
-    "İspanya": 0.0035,
-    "İtalya": 0.0034,
-    "Hindistan": 0.0012,
-    "Çin": 0.0011,
-    "Japonya": 0.0030,
-    "Brezilya": 0.0020,
-    "Rusya": 0.0015,
-    "Meksika": 0.0022,
-    "Dünya Geneli": 0.00238,
-    "İsviçre": 0.0030
+    "İsviçre": 0.0030,
+    "Almanya": 0.0039
 }
+
+yt_rate = 0.00069
+reels_rate = 0.0002
+tt_rate = 0.0007
 
 # =====================
 # STATE
 # =====================
-for k in ["spotify_total", "yt_total", "social_total"]:
+for k in ["spotify", "yt", "social"]:
     st.session_state.setdefault(k, 0.0)
 
 # =====================
-# SPOTIFY PRO MODEL
+# SPOTIFY FIXED
 # =====================
-st.header("🎧 Spotify Pro Model")
+st.header("🎧 Spotify")
 
 streams = st.number_input("Toplam Stream", min_value=0, step=1000, value=0)
 
@@ -56,50 +44,48 @@ regions = st.multiselect(
     default=["ABD", "Türkiye"]
 )
 
-use_custom = st.checkbox("Custom rate aktif")
+use_custom = st.checkbox("Custom rate")
 
 custom_rates = {}
 
 if use_custom:
-    st.info("Custom rate gir")
     for r in regions:
         custom_rates[r] = st.number_input(
             f"{r} rate",
             value=float(region_rates[r]),
             step=0.0001,
             format="%.5f",
-            key=f"c_{r}"
+            key=f"rate_{r}"
         )
 
 if st.button("Spotify Hesapla"):
 
     if streams <= 0 or len(regions) == 0:
-        st.warning("Stream ve bölge seç")
+        st.warning("Stream veya bölge eksik")
+
     else:
 
-        # =====================
-        # PRO MODEL: weighted dağıtım
-        # =====================
-        weights = {r: 1 for r in regions}
-        total_weight = sum(weights.values())
+        # 🔥 KRİTİK FIX: stream bölünmüyor, yanlış büyüme yok
+        region_share = 1 / len(regions)
 
         rows = []
         total_usd = 0.0
 
-for r in regions:
+        for r in regions:
 
-    rate = custom_rates[r] if use_custom and r in custom_rates else region_rates[r]
+            rate = custom_rates[r] if use_custom and r in custom_rates else region_rates[r]
 
-    region_streams = float(streams)   # 👈 KRİTİK FIX
+            region_streams = streams * region_share  # ✔ doğru dağıtım
 
-    income = region_streams * rate
+            income = region_streams * rate
+            total_usd += income
 
-    rows.append({
-        "Bölge": r,
-        "Stream": int(region_streams),
-        "Oran": rate,
-        "Gelir USD": income
-    })
+            rows.append({
+                "Bölge": r,
+                "Stream": int(region_streams),
+                "Oran": rate,
+                "Gelir USD": income
+            })
 
         df = pd.DataFrame(rows)
         df["Gelir TL"] = df["Gelir USD"] * exchange_rate
@@ -107,7 +93,7 @@ for r in regions:
         st.dataframe(df, use_container_width=True)
         st.bar_chart(df.set_index("Bölge")["Gelir USD"])
 
-        st.session_state.spotify_total = total_usd
+        st.session_state.spotify = total_usd
 
         st.success(f"Spotify Toplam: {symbol}{total_usd:,.2f}")
 
@@ -116,43 +102,36 @@ for r in regions:
 # =====================
 st.header("▶️ YouTube")
 
-yt_rate = 0.00069
-yt_views = st.number_input("YouTube Views", min_value=0)
+yt_views = st.number_input("Views", min_value=0)
 
-if st.button("YouTube Hesapla"):
-    yt_income = yt_views * yt_rate
-    st.session_state.yt_total = yt_income
-
-    st.metric("YouTube", f"{symbol}{yt_income:,.2f}")
+if st.button("YouTube"):
+    income = yt_views * yt_rate
+    st.session_state.yt = income
+    st.metric("YouTube", f"{symbol}{income:,.2f}")
 
 # =====================
 # SOCIAL
 # =====================
 st.header("📱 Sosyal")
 
-reels = st.number_input("Reels Views", min_value=0)
-tt = st.number_input("TikTok Views", min_value=0)
+reels = st.number_input("Reels", min_value=0)
+tt = st.number_input("TikTok", min_value=0)
 
-if st.button("Sosyal Hesapla"):
-    social_income = reels * 0.0002 + tt * 0.0007
-    st.session_state.social_total = social_income
-
-    st.metric("Sosyal", f"{symbol}{social_income:,.2f}")
+if st.button("Sosyal"):
+    income = reels * reels_rate + tt * tt_rate
+    st.session_state.social = income
+    st.metric("Sosyal", f"{symbol}{income:,.2f}")
 
 # =====================
-# DASHBOARD
+# TOTAL
 # =====================
-st.header("📊 Genel Özet")
+st.header("📊 Toplam")
 
-total = (
-    st.session_state.spotify_total +
-    st.session_state.yt_total +
-    st.session_state.social_total
-)
+total = st.session_state.spotify + st.session_state.yt + st.session_state.social
 
 col1, col2, col3, col4 = st.columns(4)
 
-col1.metric("Spotify", f"₺{st.session_state.spotify_total * exchange_rate:,.2f}")
-col2.metric("YouTube", f"₺{st.session_state.yt_total * exchange_rate:,.2f}")
-col3.metric("Sosyal", f"₺{st.session_state.social_total * exchange_rate:,.2f}")
+col1.metric("Spotify", f"₺{st.session_state.spotify * exchange_rate:,.2f}")
+col2.metric("YouTube", f"₺{st.session_state.yt * exchange_rate:,.2f}")
+col3.metric("Sosyal", f"₺{st.session_state.social * exchange_rate:,.2f}")
 col4.metric("GENEL", f"₺{total * exchange_rate:,.2f}")
