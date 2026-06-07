@@ -86,22 +86,20 @@ if st.button("Spotify Hesapla"):
         rows = []
         total_usd = 0.0
 
-        for r in regions:
+for r in regions:
 
-            share = weights[r] / total_weight
-            region_streams = streams * share
+    rate = custom_rates[r] if use_custom and r in custom_rates else region_rates[r]
 
-            rate = custom_rates[r] if use_custom else region_rates[r]
+    region_streams = float(streams)   # 👈 KRİTİK FIX
 
-            income = region_streams * rate
-            total_usd += income
+    income = region_streams * rate
 
-            rows.append({
-                "Bölge": r,
-                "Stream": region_streams,
-                "Oran": rate,
-                "Gelir USD": income
-            })
+    rows.append({
+        "Bölge": r,
+        "Stream": int(region_streams),
+        "Oran": rate,
+        "Gelir USD": income
+    })
 
         df = pd.DataFrame(rows)
         df["Gelir TL"] = df["Gelir USD"] * exchange_rate
